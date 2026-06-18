@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <defs>
+    <radialGradient id="capMetal" cx="36%" cy="30%" r="72%">
+      <stop offset="0%" stop-color="#fffce8"/>
+      <stop offset="15%" stop-color="#f5dc78"/>
+      <stop offset="40%" stop-color="#d4a82a"/>
+      <stop offset="70%" stop-color="#9a7218"/>
+      <stop offset="100%" stop-color="#5c4208"/>
+    </radialGradient>
+    <mask id="capMask">
+      <rect width="400" height="400" fill="white"/>
+      <!-- 가운데 구멍: 물리 영역 -->
+      <circle cx="200" cy="204" r="112" fill="black"/>
+    </mask>
+    <filter id="capShadow" x="-15%" y="-10%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <g mask="url(#capMask)" filter="url(#capShadow)">
+    <!-- 21톱니 크라운 캡 -->
+    <path fill="url(#capMetal)" d="M 200,8 L 225.04,33.88 L 256.59,16.53 L 272.89,48.64 L 308.16,41.36 L 314.27,76.85 L 350.11,80.29 L 345.49,116 L 378.73,129.85 L 363.79,162.62 L 391.46,185.65 L 367.53,212.55 L 387.19,242.72 L 356.39,261.38 L 366.28,296 L 331.35,304.75 L 330.59,340.75 L 294.64,338.81 L 283.31,372.99 L 249.52,360.54 L 228.62,389.86 L 200,368 L 171.38,389.86 L 150.48,360.54 L 116.69,372.99 L 105.36,338.81 L 69.41,340.75 L 68.65,304.75 L 33.72,296 L 43.61,261.38 L 12.81,242.72 L 32.47,212.55 L 8.54,185.65 L 36.21,162.62 L 21.27,129.85 L 54.51,116 L 49.89,80.29 L 85.73,76.85 L 91.84,41.36 L 127.11,48.64 L 143.41,16.53 L 174.96,33.88 L 200,8 Z"/>
+    <circle cx="200" cy="200" r="145" fill="url(#capMetal)"/>
+  </g>
+
+  <!-- 안쪽 테두리 링 (그릇 입구) -->
+  <circle cx="200" cy="204" r="112" fill="none" stroke="#6a4c10" stroke-width="3" opacity="0.6"/>
+  <circle cx="200" cy="204" r="108" fill="none" stroke="rgba(255,245,210,0.4)" stroke-width="1.5"/>
+
+  <!-- 압인 링 (투명 영역 위) -->
+  <circle cx="200" cy="200" r="92" fill="none" stroke="#6a4c10" stroke-width="2" opacity="0.35"/>
+  <circle cx="200" cy="200" r="76" fill="none" stroke="rgba(255,245,210,0.25)" stroke-width="1"/>
+
+  <!-- 금속 하이라이트 -->
+  <ellipse cx="152" cy="142" rx="50" ry="32" fill="rgba(255,255,255,0.22)" transform="rotate(-22 152 142)"/>
+</svg>

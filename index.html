@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#06080f" />
+    <title>채집</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="ambient" aria-hidden="true">
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <div class="orb orb-c"></div>
+      <div class="scanline"></div>
+      <div class="grain"></div>
+    </div>
+
+    <div id="app">
+      <section id="screen-welcome" class="screen active">
+        <h1 class="sigil">채집</h1>
+        <button id="btn-start" class="portal-btn" aria-label="시작">
+          <canvas class="portal-trail" aria-hidden="true"></canvas>
+          <span class="portal-aura"></span>
+          <span class="portal-ring portal-ring-outer"></span>
+          <span class="portal-ring portal-ring-mid"></span>
+          <span class="portal-orbit"></span>
+          <span class="portal-core">
+            <span class="portal-core-inner"></span>
+          </span>
+          <span class="portal-flare" aria-hidden="true"></span>
+        </button>
+      </section>
+
+      <section id="screen-camera" class="screen screen-fill">
+        <div class="cam-stage">
+          <video id="camera-video" playsinline autoplay muted></video>
+          <canvas id="camera-canvas" hidden></canvas>
+          <div class="cam-vignette" aria-hidden="true"></div>
+        </div>
+        <header class="bar bar-float bar-top">
+          <button id="btn-camera-back" class="icon-btn" aria-label="뒤로">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </button>
+        </header>
+        <button id="btn-capture" class="shutter shutter-float" aria-label="촬영">
+          <span class="shutter-halo"></span>
+          <span class="shutter-core"></span>
+        </button>
+      </section>
+
+      <section id="screen-preview" class="screen screen-fill">
+        <div class="scan-stage">
+          <img id="preview-original" alt="" />
+          <div id="scan-cutout-wrap" class="scan-cutout-wrap">
+            <div class="cutout-bg" aria-hidden="true"></div>
+            <img id="preview-cutout" alt="" />
+          </div>
+          <div class="scan-grid" aria-hidden="true"></div>
+          <div id="scan-beam" class="scan-beam" aria-hidden="true"></div>
+        </div>
+        <footer class="bar bar-float bar-foot preview-actions">
+          <button id="btn-retake" class="icon-btn wide" aria-label="다시">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M4 12a8 8 0 0113.8-5.6M20 12a8 8 0 01-13.8 5.6" />
+              <path d="M4 4v5h5M20 20v-5h-5" />
+            </svg>
+          </button>
+          <button id="btn-add-to-box" class="icon-btn wide accent" disabled aria-label="담기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        </footer>
+      </section>
+
+      <section id="screen-box" class="screen">
+        <div class="vessel-full">
+          <canvas id="physics-canvas"></canvas>
+          <div class="vessel-edge" aria-hidden="true"></div>
+        </div>
+
+        <header class="bar bar-float bar-top">
+          <button id="btn-box-back" class="icon-btn" aria-label="처음">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
+            </svg>
+          </button>
+          <div class="collect-meter" id="item-count" aria-hidden="true">
+            <span class="meter-fill"></span>
+          </div>
+          <button id="btn-add-more" class="icon-btn accent" aria-label="추가">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="13" r="4" />
+              <path d="M9 4l1.5 3M15 4l-1.5 3M12 4v2" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="tilt-pulse tilt-float" id="tilt-hint" aria-hidden="true"></div>
+
+        <footer class="bar bar-float bar-foot bar-foot-split">
+          <button id="btn-enable-tilt" class="icon-btn" aria-label="기울기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="6" y="3" width="12" height="18" rx="3" />
+              <circle cx="12" cy="17" r="1" fill="currentColor" />
+              <path d="M9 7h6" />
+            </svg>
+          </button>
+          <button id="btn-share" class="icon-btn" aria-label="공유" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
+              <path d="M5 20h14" />
+            </svg>
+          </button>
+        </footer>
+
+        <div id="share-sheet" class="share-sheet" hidden>
+          <div class="share-sheet-panel">
+            <button id="btn-share-snapshot" class="share-option" type="button">
+              <span class="share-option-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <rect x="4" y="5" width="16" height="14" rx="2" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+              <span class="share-option-label">상자 캡처</span>
+            </button>
+            <button id="btn-share-items" class="share-option" type="button">
+              <span class="share-option-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <rect x="4" y="4" width="7" height="7" rx="1.2" />
+                  <rect x="13" y="4" width="7" height="7" rx="1.2" />
+                  <rect x="4" y="13" width="7" height="7" rx="1.2" />
+                  <rect x="13" y="13" width="7" height="7" rx="1.2" />
+                </svg>
+              </span>
+              <span class="share-option-label">채집 원본</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
