@@ -68,28 +68,35 @@
             <div class="cutout-bg" aria-hidden="true"></div>
             <img id="preview-cutout" alt="" />
           </div>
-          <div class="scan-grid" aria-hidden="true"></div>
-          <div id="scan-beam" class="scan-beam" aria-hidden="true"></div>
-          <div id="scan-hud" class="scan-hud" hidden>
-            <div class="scan-hud-ring" id="scan-hud-ring" style="--p: 0" aria-hidden="true"></div>
-            <p id="scan-status" class="scan-status">촬영 확인 중…</p>
-            <div class="scan-progress">
-              <span id="scan-progress-bar" class="scan-progress-bar"></span>
-            </div>
+          <div id="subject-border" class="subject-border" hidden aria-hidden="true">
+            <span class="subject-border-ring"></span>
           </div>
+          <canvas id="scan-sweep" class="scan-sweep" aria-hidden="true"></canvas>
           <div class="scan-shimmer" aria-hidden="true"></div>
+          <p id="scan-status" class="scan-status-float">촬영 확인 중…</p>
+          <div id="scan-beam" class="scan-beam" hidden aria-hidden="true"></div>
         </div>
-        <footer class="bar bar-float bar-foot preview-actions">
-          <button id="btn-retake" class="icon-btn wide" aria-label="다시">
+        <footer class="preview-dock">
+          <button id="btn-preview-camera" class="dock-btn" aria-label="다시 찍기">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-              <path d="M4 12a8 8 0 0113.8-5.6M20 12a8 8 0 01-13.8 5.6" />
-              <path d="M4 4v5h5M20 20v-5h-5" />
+              <path d="M4 8h2l2-3h8l2 3h2a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 012-2z" />
+              <circle cx="12" cy="14" r="3.5" />
             </svg>
+            <span>찍기</span>
           </button>
-          <button id="btn-add-to-box" class="icon-btn wide accent" disabled aria-label="담기">
+          <button id="btn-preview-box" class="dock-btn dock-btn-main" aria-label="내 상자">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-              <path d="M12 5v14M5 12h14" />
+              <path d="M4 9l8-4 8 4v10l-8 4-8-4V9z" />
+              <path d="M12 5v18M4 9l8 4 8-4" />
             </svg>
+            <span>상자</span>
+          </button>
+          <button id="btn-preview-share" class="dock-btn" aria-label="공유">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
+              <path d="M5 20h14" />
+            </svg>
+            <span>공유</span>
           </button>
         </footer>
       </section>

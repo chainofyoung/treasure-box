@@ -2,6 +2,8 @@ import { startCamera, stopCamera, pauseCamera, capturePhoto } from './camera.js'
 import { removeBg, preloadModels } from './bgRemove.js';
 import { flattenOnBackground } from './flatten.js';
 import { ScanReveal } from './scanReveal.js';
+import { ScanSweep } from './scanSweep.js';
+import { SubjectBorder } from './subjectBorder.js';
 import { TreasureBox } from './physics.js';
 import { bindButtonFx } from './uiFx.js';
 import { initPortalButton } from './portalButton.js';
@@ -35,8 +37,11 @@ const els = {
   btnStart: document.getElementById('btn-start'),
   btnCameraBack: document.getElementById('btn-camera-back'),
   btnCapture: document.getElementById('btn-capture'),
-  btnRetake: document.getElementById('btn-retake'),
-  btnAddToBox: document.getElementById('btn-add-to-box'),
+  btnPreviewCamera: document.getElementById('btn-preview-camera'),
+  btnPreviewBox: document.getElementById('btn-preview-box'),
+  btnPreviewShare: document.getElementById('btn-preview-share'),
+  scanSweepCanvas: document.getElementById('scan-sweep'),
+  subjectBorder: document.getElementById('subject-border'),
   btnBoxBack: document.getElementById('btn-box-back'),
   btnAddMore: document.getElementById('btn-add-more'),
   btnEnableTilt: document.getElementById('btn-enable-tilt'),
@@ -52,10 +57,7 @@ const els = {
   scanStage: document.querySelector('.scan-stage'),
   scanCutoutWrap: document.getElementById('scan-cutout-wrap'),
   scanBeam: document.getElementById('scan-beam'),
-  scanHud: document.getElementById('scan-hud'),
   scanStatus: document.getElementById('scan-status'),
-  scanProgressBar: document.getElementById('scan-progress-bar'),
-  scanHudRing: document.getElementById('scan-hud-ring'),
   sharePreview: document.getElementById('share-preview'),
   sharePreviewImg: document.getElementById('share-preview-img'),
   btnShareClose: document.getElementById('btn-share-close'),
@@ -77,12 +79,14 @@ const scanReveal = new ScanReveal({
   cutoutImg: els.previewCutout,
 });
 
+const scanSweep = new ScanSweep(els.scanSweepCanvas, els.scanStage);
+const subjectBorder = new SubjectBorder(els.subjectBorder, els.scanStage);
 const processHud = new ProcessHud({
   stage: els.scanStage,
   statusEl: els.scanStatus,
-  barEl: els.scanProgressBar,
-  ringEl: els.scanHudRing,
 });
+
+let previewReady = false;
 
 let currentScreen = 'welcome';
 let capturedDataUrl = null;
@@ -223,14 +227,16 @@ function handleCapture() {
 
   els.previewOriginal.src = dataUrl;
   els.previewOriginal.hidden = false;
-  els.btnAddToBox.disabled = true;
+  previewReady = false;
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
   scanReveal.reset();
+  scanSweep.stop();
+  subjectBorder.hide();
   processHud.reset();
-  els.scanHud.hidden = false;
 
   showScreen('preview');
+  subjectBorder.showFromPhoto(dataUrl);
   processCutout(dataUrl);
 }
 
@@ -245,11 +251,11 @@ async function processCutout(dataUrl) {
   processing = true;
 
   processHud.start();
-  scanReveal.startLoop();
+  scanSweep.start();
+  els.scanStage.classList.add('scanning');
 
   const cutoutPromise = removeBg(dataUrl, (ratio, key) => {
     processHud.setProgress(ratio, key);
-    scanReveal.setProgress(ratio);
   });
 
   await delay(SHARP_HOLD_MS);
@@ -260,22 +266,25 @@ async function processCutout(dataUrl) {
     transparentCutoutUrl = rawCutout;
     previewDisplayUrl = await flattenOnBackground(rawCutout);
     processHud.setProgress(0.98, 'reveal');
+    await subjectBorder.refineFromCutout(rawCutout);
     await scanReveal.reveal(previewDisplayUrl);
+    scanSweep.stop();
     processHud.finish();
+    previewReady = true;
     els.scanStage.classList.add('scan-done');
+    els.scanStage.classList.remove('scanning');
     els.scanCutoutWrap.classList.add('revealed');
-    els.scanHud.hidden = true;
-    els.btnAddToBox.disabled = false;
   } catch (err) {
     console.warn('Imgly cutout failed:', err);
     transparentCutoutUrl = dataUrl;
     previewDisplayUrl = dataUrl;
     await scanReveal.reveal(dataUrl);
+    scanSweep.stop();
     processHud.finish();
+    previewReady = true;
     els.scanStage.classList.add('scan-done');
+    els.scanStage.classList.remove('scanning');
     els.scanCutoutWrap.classList.add('revealed');
-    els.scanHud.hidden = true;
-    els.btnAddToBox.disabled = false;
   } finally {
     processing = false;
   }
@@ -296,8 +305,10 @@ async function addToBox() {
   capturedDataUrl = null;
   revokeTransparent();
   scanReveal.reset();
+  scanSweep.stop();
+  subjectBorder.hide();
   processHud.reset();
-  els.scanHud.hidden = true;
+  previewReady = false;
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
 }
@@ -440,16 +451,61 @@ els.btnCameraBack.addEventListener('click', () => {
   showScreen(isFirstVisit ? 'welcome' : 'box');
 });
 els.btnCapture.addEventListener('click', handleCapture);
-els.btnRetake.addEventListener('click', () => {
+function retakePhoto() {
   scanReveal.stop();
+  scanSweep.stop();
+  subjectBorder.hide();
   revokeTransparent();
   processHud.reset();
-  els.scanHud.hidden = true;
+  previewReady = false;
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
   openCamera();
+}
+
+async function goToBoxFromPreview() {
+  if (previewReady && (transparentCutoutUrl || capturedDataUrl)) {
+    await addToBox();
+    return;
+  }
+  if (processing) {
+    showToast('스캔 중이에요…');
+    return;
+  }
+  await ensureBox();
+  showScreen('box');
+}
+
+async function shareFromPreview() {
+  if (processing && !previewReady) {
+    showToast('스캔 중이에요…');
+    return;
+  }
+  const url = transparentCutoutUrl || capturedDataUrl;
+  if (!url) return;
+
+  showToast('이미지 만드는 중…');
+  try {
+    const payload = await shareTreasureItems([url]);
+    openSharePreview({
+      blob: payload.blob,
+      filename: payload.filename,
+      imgEl: els.sharePreviewImg,
+      panelEl: els.sharePreview,
+    });
+  } catch (err) {
+    showToast('공유할 수 없어요');
+    console.error(err);
+  }
+}
+
+els.btnPreviewCamera.addEventListener('click', retakePhoto);
+els.btnPreviewBox.addEventListener('click', goToBoxFromPreview);
+els.btnPreviewShare.addEventListener('click', shareFromPreview);
+window.addEventListener('resize', () => {
+  scanSweep.resize();
+  subjectBorder.resize();
 });
-els.btnAddToBox.addEventListener('click', addToBox);
 els.btnBoxBack.addEventListener('click', tryReset);
 els.btnAddMore.addEventListener('click', openCamera);
 els.btnEnableTilt.addEventListener('click', enableTilt);

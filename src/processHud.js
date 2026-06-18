@@ -1,11 +1,9 @@
 const TICK_MS = 90;
 
 export class ProcessHud {
-  constructor({ stage, statusEl, barEl, ringEl }) {
+  constructor({ stage, statusEl }) {
     this.stage = stage;
     this.statusEl = statusEl;
-    this.barEl = barEl;
-    this.ringEl = ringEl;
     this.display = 0;
     this.target = 0;
     this.tick = null;
@@ -90,8 +88,6 @@ export class ProcessHud {
   }
 
   _render() {
-    const pct = Math.round(this.display * 100);
-    if (this.barEl) this.barEl.style.width = `${pct}%`;
-    if (this.ringEl) this.ringEl.style.setProperty('--p', `${pct}`);
+    /* progress tracked internally for status timing */
   }
 }
