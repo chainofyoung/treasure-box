@@ -145,6 +145,8 @@ export class SubjectBorder {
     this.imgW = w;
     this.imgH = h;
     this._applyNorm(norm);
+    this.el.hidden = false;
+    this.el.classList.add('active');
   }
 
   _applyNorm(norm) {

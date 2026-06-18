@@ -8,7 +8,7 @@ export class ProcessHud {
     this.target = 0;
     this.tick = null;
     this.phraseIdx = 0;
-    this.phrases = ['촬영 확인 중…', '불러오는 중…', '윤곽 따는 중…', '정리하는 중…'];
+    this.phrases = ['줍는 중…', '불러오는 중…', '떼어내는 중…', '거의 다 됐어요…'];
   }
 
   start() {
@@ -30,15 +30,15 @@ export class ProcessHud {
       this._setStatus('도구 받는 중…');
       this.phraseIdx = 1;
     } else if (key?.includes('compute') || key?.includes('run')) {
-      this._setStatus('윤곽 따는 중…');
+      this._setStatus('떼어내는 중…');
       this.phraseIdx = 2;
     } else if (real < 0.15) {
-      this._setStatus('촬영 확인 중…');
+      this._setStatus('줍는 중…');
     } else if (real < 0.42) {
       this._setStatus('준비하는 중…');
       this.phraseIdx = 1;
     } else if (real < 0.9) {
-      this._setStatus('윤곽 따는 중…');
+      this._setStatus('떼어내는 중…');
       this.phraseIdx = 2;
     } else {
       this._setStatus('거의 다 됐어요…');

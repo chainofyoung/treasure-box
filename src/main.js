@@ -1,6 +1,5 @@
 import { startCamera, stopCamera, pauseCamera, capturePhoto } from './camera.js';
 import { removeBg, preloadModels } from './bgRemove.js';
-import { flattenOnBackground } from './flatten.js';
 import { ScanReveal } from './scanReveal.js';
 import { ScanSweep } from './scanSweep.js';
 import { SubjectBorder } from './subjectBorder.js';
@@ -228,22 +227,38 @@ function handleCapture() {
   els.previewOriginal.src = dataUrl;
   els.previewOriginal.hidden = false;
   previewReady = false;
+  screens.preview.classList.remove('scan-complete');
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
+  els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
   scanReveal.reset();
   scanSweep.stop();
+  els.scanBeam.hidden = true;
   subjectBorder.hide();
   processHud.reset();
 
+  screens.preview.classList.remove('scan-complete');
   showScreen('preview');
-  subjectBorder.showFromPhoto(dataUrl);
   processCutout(dataUrl);
 }
 
-const SHARP_HOLD_MS = 520;
+function loadImageSrc(img, src) {
+  return new Promise((resolve) => {
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = src;
+    if (img.complete && img.naturalWidth > 0) resolve();
+  });
+}
 
-function delay(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+async function showCutoutResult(cutoutUrl) {
+  await loadImageSrc(els.previewCutout, cutoutUrl);
+  els.scanCutoutWrap.style.clipPath = 'inset(0)';
+  els.scanCutoutWrap.classList.add('revealed');
+  els.scanStage.classList.add('scan-done');
+  els.scanStage.classList.remove('scanning', 'processing');
+  screens.preview.classList.add('scan-complete');
+  await subjectBorder.refineFromCutout(cutoutUrl);
 }
 
 async function processCutout(dataUrl) {
@@ -252,39 +267,33 @@ async function processCutout(dataUrl) {
 
   processHud.start();
   scanSweep.start();
-  els.scanStage.classList.add('scanning');
-
-  const cutoutPromise = removeBg(dataUrl, (ratio, key) => {
-    processHud.setProgress(ratio, key);
-  });
-
-  await delay(SHARP_HOLD_MS);
+  els.scanBeam.hidden = false;
+  scanReveal.startLoop();
+  els.scanStage.classList.add('scanning', 'processing');
 
   try {
-    const rawCutout = await cutoutPromise;
-    processHud.setProgress(0.94, 'compose');
+    const rawCutout = await removeBg(dataUrl, (ratio, key) => {
+      processHud.setProgress(ratio, key);
+    });
+    processHud.setProgress(0.96, 'reveal');
     transparentCutoutUrl = rawCutout;
-    previewDisplayUrl = await flattenOnBackground(rawCutout);
-    processHud.setProgress(0.98, 'reveal');
-    await subjectBorder.refineFromCutout(rawCutout);
-    await scanReveal.reveal(previewDisplayUrl);
+    previewDisplayUrl = rawCutout;
     scanSweep.stop();
+    scanReveal.stop();
+    els.scanBeam.hidden = true;
+    await showCutoutResult(rawCutout);
     processHud.finish();
     previewReady = true;
-    els.scanStage.classList.add('scan-done');
-    els.scanStage.classList.remove('scanning');
-    els.scanCutoutWrap.classList.add('revealed');
   } catch (err) {
     console.warn('Imgly cutout failed:', err);
     transparentCutoutUrl = dataUrl;
     previewDisplayUrl = dataUrl;
-    await scanReveal.reveal(dataUrl);
     scanSweep.stop();
+    scanReveal.stop();
+    els.scanBeam.hidden = true;
+    await showCutoutResult(dataUrl);
     processHud.finish();
     previewReady = true;
-    els.scanStage.classList.add('scan-done');
-    els.scanStage.classList.remove('scanning');
-    els.scanCutoutWrap.classList.add('revealed');
   } finally {
     processing = false;
   }
@@ -306,11 +315,14 @@ async function addToBox() {
   revokeTransparent();
   scanReveal.reset();
   scanSweep.stop();
+  els.scanBeam.hidden = true;
   subjectBorder.hide();
   processHud.reset();
   previewReady = false;
+  screens.preview.classList.remove('scan-complete');
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
+  els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
 }
 
 function enableTilt() {
@@ -454,12 +466,15 @@ els.btnCapture.addEventListener('click', handleCapture);
 function retakePhoto() {
   scanReveal.stop();
   scanSweep.stop();
+  els.scanBeam.hidden = true;
   subjectBorder.hide();
   revokeTransparent();
   processHud.reset();
   previewReady = false;
+  screens.preview.classList.remove('scan-complete');
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
+  els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
   openCamera();
 }
 

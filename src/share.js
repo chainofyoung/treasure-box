@@ -132,9 +132,11 @@ export async function prepareItemShareBlob(urls) {
   return canvasToJpegBlob(out, 0.9);
 }
 
+const SHARE_TITLE = '줍줍일지';
+
 export function shareFileNow(file) {
   if (!canShareFile(file)) return Promise.reject(new Error('cannot share'));
-  return navigator.share({ files: [file] });
+  return navigator.share({ files: [file], title: SHARE_TITLE });
 }
 
 export async function shareImageBlob(blob, filename) {
@@ -143,7 +145,7 @@ export async function shareImageBlob(blob, filename) {
   for (const file of files) {
     if (!canShareFile(file)) continue;
     try {
-      await navigator.share({ files: [file] });
+      await navigator.share({ files: [file], title: SHARE_TITLE });
       return 'shared';
     } catch (err) {
       if (err?.name === 'AbortError') throw err;
@@ -153,7 +155,7 @@ export async function shareImageBlob(blob, filename) {
   if (typeof navigator.share === 'function') {
     for (const file of files) {
       try {
-        await navigator.share({ files: [file] });
+        await navigator.share({ files: [file], title: SHARE_TITLE });
         return 'shared';
       } catch (err) {
         if (err?.name === 'AbortError') throw err;
@@ -174,7 +176,7 @@ export async function shareSnapshot(vesselEl, canvas) {
   const blob = await captureVesselSnapshot(vesselEl, canvas);
   return {
     blob,
-    filename: `채집-상자-${stamp()}`,
+    filename: `줍줍일지-상자-${stamp()}`,
   };
 }
 
@@ -183,7 +185,7 @@ export async function shareTreasureItems(urls) {
   const blob = await prepareItemShareBlob(urls);
   return {
     blob,
-    filename: urls.length === 1 ? `채집-${stamp()}` : `채집-모음-${stamp()}`,
+    filename: urls.length === 1 ? `줍줍일지-${stamp()}` : `줍줍일지-모음-${stamp()}`,
   };
 }
 
