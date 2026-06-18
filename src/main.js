@@ -234,7 +234,7 @@ function handleCapture() {
   processCutout(dataUrl);
 }
 
-const SHARP_HOLD_MS = 850;
+const SHARP_HOLD_MS = 520;
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));

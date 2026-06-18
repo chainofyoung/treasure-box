@@ -31,6 +31,9 @@ export class ProcessHud {
     if (key?.includes('fetch') || key?.includes('download')) {
       this._setStatus('도구 받는 중…');
       this.phraseIdx = 1;
+    } else if (key?.includes('compute') || key?.includes('run')) {
+      this._setStatus('윤곽 따는 중…');
+      this.phraseIdx = 2;
     } else if (real < 0.15) {
       this._setStatus('촬영 확인 중…');
     } else if (real < 0.42) {
