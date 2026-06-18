@@ -70,6 +70,14 @@
           </div>
           <div class="scan-grid" aria-hidden="true"></div>
           <div id="scan-beam" class="scan-beam" aria-hidden="true"></div>
+          <div id="scan-hud" class="scan-hud" hidden>
+            <div class="scan-hud-ring" id="scan-hud-ring" style="--p: 0" aria-hidden="true"></div>
+            <p id="scan-status" class="scan-status">촬영 확인 중…</p>
+            <div class="scan-progress">
+              <span id="scan-progress-bar" class="scan-progress-bar"></span>
+            </div>
+          </div>
+          <div class="scan-shimmer" aria-hidden="true"></div>
         </div>
         <footer class="bar bar-float bar-foot preview-actions">
           <button id="btn-retake" class="icon-btn wide" aria-label="다시">
@@ -148,11 +156,25 @@
                   <rect x="13" y="13" width="7" height="7" rx="1.2" />
                 </svg>
               </span>
-              <span class="share-option-label">채집 원본</span>
+              <span class="share-option-label">채집 모음</span>
             </button>
           </div>
         </div>
       </section>
+    </div>
+
+    <div id="share-preview" class="share-preview" hidden>
+      <div class="share-preview-panel">
+        <button id="btn-share-close" class="icon-btn share-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+        <img id="share-preview-img" alt="공유할 이미지" />
+        <p class="share-preview-hint">카카오톡을 선택해서 보내세요</p>
+        <button id="btn-share-kakao" class="kakao-btn" type="button">카카오톡으로 보내기</button>
+        <button id="btn-share-save" class="share-save-btn" type="button">저장하기</button>
+      </div>
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

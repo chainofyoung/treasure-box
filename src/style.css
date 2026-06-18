@@ -741,6 +741,106 @@ body {
   opacity: 0;
 }
 
+.scan-stage.processing #preview-original {
+  animation: scan-breathe 1.8s ease-in-out infinite;
+}
+
+.scan-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(180, 230, 255, 0.12) 48%,
+    rgba(220, 245, 255, 0.22) 50%,
+    rgba(180, 230, 255, 0.12) 52%,
+    transparent 62%
+  );
+  background-size: 220% 100%;
+}
+
+.scan-stage.processing .scan-shimmer {
+  opacity: 1;
+  animation: scan-shimmer 2.2s ease-in-out infinite;
+}
+
+.scan-hud {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 7.5rem);
+  transform: translateX(-50%);
+  z-index: 6;
+  width: min(78vw, 280px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 1.1rem 0.85rem;
+  border-radius: 18px;
+  background: rgba(8, 12, 22, 0.72);
+  border: 1px solid rgba(180, 210, 240, 0.16);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.38);
+}
+
+.scan-hud[hidden] {
+  display: none;
+}
+
+.scan-hud-ring {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(126, 200, 227, 0.15) 0 58%, transparent 59%),
+    conic-gradient(
+      rgba(126, 200, 227, 0.95) calc(var(--p) * 1%),
+      rgba(180, 210, 240, 0.12) 0
+    );
+  animation: hud-spin 3s linear infinite;
+}
+
+.scan-status {
+  font-size: 0.84rem;
+  letter-spacing: 0.06em;
+  color: var(--mist);
+  min-height: 1.2em;
+}
+
+.scan-progress {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(180, 210, 240, 0.12);
+  overflow: hidden;
+}
+
+.scan-progress-bar {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, transparent, var(--ice), transparent);
+  box-shadow: 0 0 10px var(--ice-glow);
+  transition: width 0.2s ease;
+}
+
+@keyframes scan-breathe {
+  0%, 100% { transform: scale(1); filter: saturate(1) brightness(1); }
+  50% { transform: scale(1.012); filter: saturate(1.05) brightness(1.06); }
+}
+
+@keyframes scan-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@keyframes hud-spin {
+  to { transform: rotate(360deg); }
+}
+
 .preview-actions {
   gap: 2.5rem;
   justify-content: center;
@@ -936,5 +1036,91 @@ body {
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+.share-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  background: rgba(4, 6, 12, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.share-preview[hidden] {
+  display: none;
+}
+
+.share-preview-panel {
+  position: relative;
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.share-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+}
+
+#share-preview-img {
+  width: 100%;
+  max-height: 52vh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #0b0b0f;
+}
+
+.share-preview-hint {
+  font-size: 0.78rem;
+  text-align: center;
+  color: var(--mist-dim);
+  letter-spacing: 0.03em;
+}
+
+.kakao-btn {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: #fee500;
+  color: #191600;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.kakao-btn:active {
+  transform: scale(0.98);
+  filter: brightness(0.96);
+}
+
+.share-save-btn {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 12px;
+  background: rgba(12, 18, 32, 0.55);
+  color: var(--mist);
+  font-size: 0.86rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.share-save-btn:active {
+  background: rgba(126, 200, 227, 0.1);
 }
 

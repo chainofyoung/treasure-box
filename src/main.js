@@ -6,7 +6,15 @@ import { TreasureBox } from './physics.js';
 import { bindButtonFx } from './uiFx.js';
 import { initPortalButton } from './portalButton.js';
 import { initStaticCrackles } from './staticCrackle.js';
-import { shareSnapshot, shareTreasureItems } from './share.js';
+import {
+  shareSnapshot,
+  shareTreasureItems,
+  openSharePreview,
+  closeSharePreview,
+  sharePreviewKakao,
+  sharePreviewSave,
+} from './share.js';
+import { ProcessHud } from './processHud.js';
 import { persistTreasure, loadTreasures, clearTreasures } from './storage.js';
 
 const screens = {
@@ -37,6 +45,15 @@ const els = {
   scanStage: document.querySelector('.scan-stage'),
   scanCutoutWrap: document.getElementById('scan-cutout-wrap'),
   scanBeam: document.getElementById('scan-beam'),
+  scanHud: document.getElementById('scan-hud'),
+  scanStatus: document.getElementById('scan-status'),
+  scanProgressBar: document.getElementById('scan-progress-bar'),
+  scanHudRing: document.getElementById('scan-hud-ring'),
+  sharePreview: document.getElementById('share-preview'),
+  sharePreviewImg: document.getElementById('share-preview-img'),
+  btnShareClose: document.getElementById('btn-share-close'),
+  btnShareKakao: document.getElementById('btn-share-kakao'),
+  btnShareSave: document.getElementById('btn-share-save'),
   physicsCanvas: document.getElementById('physics-canvas'),
   boxFrame: document.querySelector('.vessel-full'),
   itemCount: document.querySelector('.meter-fill'),
@@ -47,6 +64,13 @@ const scanReveal = new ScanReveal({
   beam: els.scanBeam,
   cutoutWrap: els.scanCutoutWrap,
   cutoutImg: els.previewCutout,
+});
+
+const processHud = new ProcessHud({
+  stage: els.scanStage,
+  statusEl: els.scanStatus,
+  barEl: els.scanProgressBar,
+  ringEl: els.scanHudRing,
 });
 
 let currentScreen = 'welcome';
@@ -154,10 +178,11 @@ function handleCapture() {
   els.previewOriginal.src = dataUrl;
   els.previewOriginal.hidden = false;
   els.btnAddToBox.disabled = true;
-  els.scanStage.classList.remove('scan-done', 'scanning');
+  els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
   scanReveal.reset();
-  els.scanStage.classList.remove('scanning');
+  processHud.reset();
+  els.scanHud.hidden = false;
 
   showScreen('preview');
   processCutout(dataUrl);
@@ -173,31 +198,37 @@ async function processCutout(dataUrl) {
   if (processing) return;
   processing = true;
 
-  let scanning = false;
-  const cutoutPromise = removeBg(dataUrl, (ratio) => {
-    if (scanning) scanReveal.setProgress(ratio);
+  processHud.start();
+  scanReveal.startLoop();
+
+  const cutoutPromise = removeBg(dataUrl, (ratio, key) => {
+    processHud.setProgress(ratio, key);
+    scanReveal.setProgress(ratio);
   });
 
   await delay(SHARP_HOLD_MS);
-  els.scanStage.classList.add('scanning');
-  scanning = true;
-  scanReveal.startLoop();
 
   try {
     const rawCutout = await cutoutPromise;
+    processHud.setProgress(0.94, 'compose');
     transparentCutoutUrl = rawCutout;
     previewDisplayUrl = await flattenOnBackground(rawCutout);
+    processHud.setProgress(0.98, 'reveal');
     await scanReveal.reveal(previewDisplayUrl);
+    processHud.finish();
     els.scanStage.classList.add('scan-done');
     els.scanCutoutWrap.classList.add('revealed');
+    els.scanHud.hidden = true;
     els.btnAddToBox.disabled = false;
   } catch (err) {
     console.warn('Imgly cutout failed:', err);
     transparentCutoutUrl = dataUrl;
     previewDisplayUrl = dataUrl;
     await scanReveal.reveal(dataUrl);
+    processHud.finish();
     els.scanStage.classList.add('scan-done');
     els.scanCutoutWrap.classList.add('revealed');
+    els.scanHud.hidden = true;
     els.btnAddToBox.disabled = false;
   } finally {
     processing = false;
@@ -219,7 +250,9 @@ async function addToBox() {
   capturedDataUrl = null;
   revokeTransparent();
   scanReveal.reset();
-  els.scanStage.classList.remove('scan-done', 'scanning');
+  processHud.reset();
+  els.scanHud.hidden = true;
+  els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
 }
 
@@ -266,29 +299,31 @@ function tryReset() {
   showScreen('welcome');
 }
 
-async function handleShareSnapshot() {
+async function openSharePreviewFrom(mode) {
   closeShareSheet();
+  showToast('이미지 만드는 중…');
+
   try {
-    const result = await shareSnapshot(els.boxFrame, els.physicsCanvas);
-    showToast(result === 'shared' ? '공유했어요' : '이미지를 저장했어요');
+    const payload = mode === 'items'
+      ? await shareTreasureItems(loadTreasures())
+      : await shareSnapshot(els.boxFrame, els.physicsCanvas);
+
+    openSharePreview({
+      blob: payload.blob,
+      filename: payload.filename,
+      imgEl: els.sharePreviewImg,
+      panelEl: els.sharePreview,
+    });
   } catch (err) {
-    if (err?.name !== 'AbortError') {
-      showToast('공유할 수 없어요');
-      console.error(err);
-    }
+    showToast('이미지를 만들 수 없어요');
+    console.error(err);
   }
 }
 
-async function handleShareItems() {
-  closeShareSheet();
-  const items = loadTreasures();
-  if (!items.length) return;
-
+async function runShareAction(action) {
   try {
-    const result = await shareTreasureItems(items);
-    if (result === 'shared') showToast('채집 원본을 공유했어요');
-    else if (result === 'downloaded-many') showToast('채집 원본을 저장했어요');
-    else showToast('이미지를 저장했어요');
+    const result = await action();
+    if (result?.toast) showToast(result.toast);
   } catch (err) {
     if (err?.name !== 'AbortError') {
       showToast('공유할 수 없어요');
@@ -309,7 +344,9 @@ els.btnCapture.addEventListener('click', handleCapture);
 els.btnRetake.addEventListener('click', () => {
   scanReveal.stop();
   revokeTransparent();
-  els.scanStage.classList.remove('scan-done', 'scanning');
+  processHud.reset();
+  els.scanHud.hidden = true;
+  els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
   openCamera();
 });
@@ -318,10 +355,20 @@ els.btnBoxBack.addEventListener('click', tryReset);
 els.btnAddMore.addEventListener('click', openCamera);
 els.btnEnableTilt.addEventListener('click', enableTilt);
 els.btnShare.addEventListener('click', openShareSheet);
-els.btnShareSnapshot.addEventListener('click', handleShareSnapshot);
-els.btnShareItems.addEventListener('click', handleShareItems);
+els.btnShareSnapshot.addEventListener('click', () => openSharePreviewFrom('snapshot'));
+els.btnShareItems.addEventListener('click', () => openSharePreviewFrom('items'));
+els.btnShareKakao.addEventListener('click', () => runShareAction(sharePreviewKakao));
+els.btnShareSave.addEventListener('click', () => runShareAction(sharePreviewSave));
+els.btnShareClose.addEventListener('click', () => {
+  closeSharePreview(els.sharePreview, els.sharePreviewImg);
+});
 els.shareSheet.addEventListener('click', (e) => {
   if (e.target === els.shareSheet) closeShareSheet();
+});
+els.sharePreview.addEventListener('click', (e) => {
+  if (e.target === els.sharePreview) {
+    closeSharePreview(els.sharePreview, els.sharePreviewImg);
+  }
 });
 
 document.addEventListener('visibilitychange', () => {
