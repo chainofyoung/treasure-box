@@ -1,4 +1,4 @@
-import { startCamera, stopCamera, capturePhoto } from './camera.js';
+import { startCamera, stopCamera, pauseCamera, capturePhoto } from './camera.js';
 import { removeBg, preloadModels } from './bgRemove.js';
 import { flattenOnBackground } from './flatten.js';
 import { ScanReveal } from './scanReveal.js';
@@ -11,8 +11,15 @@ import {
   shareTreasureItems,
   openSharePreview,
   closeSharePreview,
-  sharePreviewKakao,
+  sharePreviewKakaoSync,
+  shareCachedKakaoSync,
+  shareFileNow,
+  sharePreviewKakaoMessage,
   sharePreviewSave,
+  setShareCache,
+  getShareCache,
+  getPreviewState,
+  shareImageBlob,
 } from './share.js';
 import { ProcessHud } from './processHud.js';
 import { persistTreasure, loadTreasures, clearTreasures } from './storage.js';
@@ -54,6 +61,10 @@ const els = {
   btnShareClose: document.getElementById('btn-share-close'),
   btnShareKakao: document.getElementById('btn-share-kakao'),
   btnShareSave: document.getElementById('btn-share-save'),
+  btnShareKakaoDirect: document.getElementById('btn-share-kakao-direct'),
+  cameraIntro: document.getElementById('camera-intro'),
+  btnCameraAllow: document.getElementById('btn-camera-allow'),
+  btnCameraIntroCancel: document.getElementById('btn-camera-intro-cancel'),
   physicsCanvas: document.getElementById('physics-canvas'),
   boxFrame: document.querySelector('.vessel-full'),
   itemCount: document.querySelector('.meter-fill'),
@@ -81,6 +92,8 @@ let treasureBox = null;
 let isFirstVisit = true;
 let resetTap = 0;
 let processing = false;
+let sharePrepareMode = 'snapshot';
+const CAMERA_INTRO_KEY = 'camera-intro-ok';
 
 preloadModels().catch(() => {});
 bindButtonFx();
@@ -137,6 +150,16 @@ function updateShareState(count) {
 function openShareSheet() {
   if (!loadTreasures().length) return;
   els.shareSheet.hidden = false;
+  sharePrepareMode = 'snapshot';
+  prefetchShareImage('snapshot');
+}
+
+function prefetchShareImage(mode) {
+  sharePrepareMode = mode;
+  const run = mode === 'items'
+    ? shareTreasureItems(loadTreasures())
+    : shareSnapshot(els.boxFrame, els.physicsCanvas);
+  run.then((payload) => setShareCache(payload)).catch(() => {});
 }
 
 function closeShareSheet() {
@@ -156,7 +179,24 @@ function revokeTransparent() {
   previewDisplayUrl = null;
 }
 
-async function openCamera() {
+function needsCameraIntro() {
+  return !localStorage.getItem(CAMERA_INTRO_KEY);
+}
+
+function openCameraIntro() {
+  els.cameraIntro.hidden = false;
+}
+
+function closeCameraIntro() {
+  els.cameraIntro.hidden = true;
+}
+
+async function openCamera(skipIntro = false) {
+  if (!skipIntro && needsCameraIntro()) {
+    openCameraIntro();
+    return;
+  }
+
   showScreen('camera');
   preloadModels().catch(() => {});
   try {
@@ -165,6 +205,12 @@ async function openCamera() {
     showScreen(isFirstVisit ? 'welcome' : 'box');
     console.error(err);
   }
+}
+
+async function allowCameraAndStart() {
+  localStorage.setItem(CAMERA_INTRO_KEY, '1');
+  closeCameraIntro();
+  await openCamera(true);
 }
 
 function handleCapture() {
@@ -301,6 +347,7 @@ function tryReset() {
 
 async function openSharePreviewFrom(mode) {
   closeShareSheet();
+  prefetchShareImage(mode);
   showToast('이미지 만드는 중…');
 
   try {
@@ -320,15 +367,67 @@ async function openSharePreviewFrom(mode) {
   }
 }
 
-async function runShareAction(action) {
+function triggerNativeShare(syncResult, fallbackBlob, fallbackName) {
+  if (syncResult.ok) {
+    shareFileNow(syncResult.file)
+      .then(() => showToast(sharePreviewKakaoMessage('shared').toast))
+      .catch(async (err) => {
+        if (err?.name === 'AbortError') return;
+        if (fallbackBlob) {
+          const result = await shareImageBlob(fallbackBlob, fallbackName);
+          showToast(sharePreviewKakaoMessage(result).toast);
+        } else {
+          showToast('공유할 수 없어요');
+        }
+      });
+    return;
+  }
+
+  if (fallbackBlob) {
+    shareImageBlob(fallbackBlob, fallbackName)
+      .then((result) => showToast(sharePreviewKakaoMessage(result).toast))
+      .catch((err) => {
+        if (err?.name !== 'AbortError') showToast('공유할 수 없어요');
+      });
+  } else {
+    showToast('이미지 준비 중이에요. 잠시 후 다시 눌러주세요');
+  }
+}
+
+function handleKakaoShareClick() {
+  const cached = shareCachedKakaoSync();
+  if (cached.ok) {
+    closeShareSheet();
+    triggerNativeShare(cached, getShareCache()?.blob, getShareCache()?.filename);
+    return;
+  }
+
+  const preview = sharePreviewKakaoSync();
+  if (preview.ok) {
+    const state = getPreviewState();
+    triggerNativeShare(preview, state?.blob, state?.filename);
+    return;
+  }
+
+  showToast('이미지 준비 중이에요…');
+  const run = sharePrepareMode === 'items'
+    ? shareTreasureItems(loadTreasures())
+    : shareSnapshot(els.boxFrame, els.physicsCanvas);
+  run
+    .then((payload) => {
+      setShareCache(payload);
+      const next = shareCachedKakaoSync();
+      triggerNativeShare(next, payload.blob, payload.filename);
+    })
+    .catch(() => showToast('이미지를 만들 수 없어요'));
+}
+
+async function runShareSave() {
   try {
-    const result = await action();
+    const result = await sharePreviewSave();
     if (result?.toast) showToast(result.toast);
   } catch (err) {
-    if (err?.name !== 'AbortError') {
-      showToast('공유할 수 없어요');
-      console.error(err);
-    }
+    if (err?.name !== 'AbortError') showToast('저장할 수 없어요');
   }
 }
 
@@ -337,7 +436,7 @@ initPortalButton(els.btnStart, () => {
   openCamera();
 });
 els.btnCameraBack.addEventListener('click', () => {
-  stopCamera();
+  pauseCamera();
   showScreen(isFirstVisit ? 'welcome' : 'box');
 });
 els.btnCapture.addEventListener('click', handleCapture);
@@ -356,9 +455,21 @@ els.btnAddMore.addEventListener('click', openCamera);
 els.btnEnableTilt.addEventListener('click', enableTilt);
 els.btnShare.addEventListener('click', openShareSheet);
 els.btnShareSnapshot.addEventListener('click', () => openSharePreviewFrom('snapshot'));
-els.btnShareItems.addEventListener('click', () => openSharePreviewFrom('items'));
-els.btnShareKakao.addEventListener('click', () => runShareAction(sharePreviewKakao));
-els.btnShareSave.addEventListener('click', () => runShareAction(sharePreviewSave));
+els.btnShareItems.addEventListener('click', () => {
+  sharePrepareMode = 'items';
+  openSharePreviewFrom('items');
+});
+els.btnShareKakaoDirect.addEventListener('click', () => {
+  sharePrepareMode = 'snapshot';
+  handleKakaoShareClick();
+});
+els.btnShareKakao.addEventListener('click', handleKakaoShareClick);
+els.btnShareSave.addEventListener('click', runShareSave);
+els.btnCameraAllow.addEventListener('click', allowCameraAndStart);
+els.btnCameraIntroCancel.addEventListener('click', () => {
+  closeCameraIntro();
+  showScreen(isFirstVisit ? 'welcome' : 'box');
+});
 els.btnShareClose.addEventListener('click', () => {
   closeSharePreview(els.sharePreview, els.sharePreviewImg);
 });
@@ -373,6 +484,8 @@ els.sharePreview.addEventListener('click', (e) => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && currentScreen === 'camera') {
-    stopCamera();
+    pauseCamera();
+  } else if (!document.hidden && currentScreen === 'camera') {
+    startCamera(els.video).catch(() => {});
   }
 });

@@ -1015,6 +1015,67 @@ body {
   color: var(--mist-dim);
 }
 
+.share-sheet-panel-wide {
+  flex-direction: column;
+  width: min(100%, 340px);
+  gap: 0.75rem;
+}
+
+.share-sheet-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.kakao-btn-sheet {
+  width: 100%;
+}
+
+.camera-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem;
+  background: rgba(4, 6, 12, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.camera-intro[hidden] {
+  display: none;
+}
+
+.camera-intro-panel {
+  width: min(100%, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.2rem;
+  border-radius: 20px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.camera-intro-title {
+  font-family: var(--font-sigil);
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  color: var(--sigil);
+}
+
+.camera-intro-desc {
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--mist-dim);
+}
+
+.camera-allow-btn {
+  margin-top: 0.2rem;
+}
+
 .toast {
   position: fixed;
   left: 50%;

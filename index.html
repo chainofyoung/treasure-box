@@ -137,7 +137,11 @@
         </footer>
 
         <div id="share-sheet" class="share-sheet" hidden>
-          <div class="share-sheet-panel">
+          <div class="share-sheet-panel share-sheet-panel-wide">
+            <button id="btn-share-kakao-direct" class="kakao-btn kakao-btn-sheet" type="button">
+              카카오톡으로 보내기
+            </button>
+            <div class="share-sheet-row">
             <button id="btn-share-snapshot" class="share-option" type="button">
               <span class="share-option-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
@@ -158,9 +162,19 @@
               </span>
               <span class="share-option-label">채집 모음</span>
             </button>
+            </div>
           </div>
         </div>
       </section>
+
+      <div id="camera-intro" class="camera-intro" hidden>
+        <div class="camera-intro-panel">
+          <p class="camera-intro-title">카메라를 사용해요</p>
+          <p class="camera-intro-desc">촬영한 것을 채집 상자에 담습니다.<br />처음 한 번만 허용하면 됩니다.</p>
+          <button id="btn-camera-allow" class="kakao-btn camera-allow-btn" type="button">카메라 허용하고 시작</button>
+          <button id="btn-camera-intro-cancel" class="share-save-btn" type="button">취소</button>
+        </div>
+      </div>
     </div>
 
     <div id="share-preview" class="share-preview" hidden>

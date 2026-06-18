@@ -1,19 +1,27 @@
 const BG = '#06080f';
 
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
 function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
     || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
 }
 
-function blobToFile(blob, filename) {
-  const type = blob.type || 'image/jpeg';
+function blobToFile(blob, filename, type = 'image/jpeg') {
   const ext = type.includes('png') ? 'png' : 'jpg';
   const name = filename.includes('.') ? filename : `${filename}.${ext}`;
   return new File([blob], name, { type, lastModified: Date.now() });
 }
 
+function canShareFile(file) {
+  return typeof navigator.share === 'function'
+    && (!navigator.canShare || navigator.canShare({ files: [file] }));
+}
+
 function downloadBlob(blob, filename) {
-  const file = blobToFile(blob, filename);
+  const file = blobToFile(blob, filename, blob.type || 'image/jpeg');
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -33,6 +41,14 @@ function stamp() {
 
 function waitFrame() {
   return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+}
+
+function buildShareFiles(blob, filename) {
+  const files = [
+    blobToFile(blob, filename, 'image/jpeg'),
+    blobToFile(blob, filename, 'image/png'),
+  ];
+  return files.filter((file, idx, arr) => arr.findIndex((f) => f.type === file.type) === idx);
 }
 
 export async function captureVesselSnapshot(vesselEl, canvas) {
@@ -116,34 +132,42 @@ export async function prepareItemShareBlob(urls) {
   return canvasToJpegBlob(out, 0.9);
 }
 
-export async function shareImageBlob(blob, filename) {
-  const file = blobToFile(blob, filename);
+export function shareFileNow(file) {
+  if (!canShareFile(file)) return Promise.reject(new Error('cannot share'));
+  return navigator.share({ files: [file] });
+}
 
-  if (typeof navigator.share === 'function') {
+export async function shareImageBlob(blob, filename) {
+  const files = buildShareFiles(blob, filename);
+
+  for (const file of files) {
+    if (!canShareFile(file)) continue;
     try {
-      await navigator.share({ files: [file], title: '채집' });
+      await navigator.share({ files: [file] });
       return 'shared';
     } catch (err) {
       if (err?.name === 'AbortError') throw err;
     }
   }
 
-  if (isMobile()) {
-    const url = URL.createObjectURL(blob);
-    const opened = window.open(url, '_blank');
-    if (opened) {
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-      return 'opened';
+  if (typeof navigator.share === 'function') {
+    for (const file of files) {
+      try {
+        await navigator.share({ files: [file] });
+        return 'shared';
+      } catch (err) {
+        if (err?.name === 'AbortError') throw err;
+      }
     }
-    URL.revokeObjectURL(url);
   }
 
-  downloadBlob(blob, file.name);
-  return 'downloaded';
-}
+  if (isAndroid() || isMobile()) {
+    downloadBlob(blob, filename);
+    return 'downloaded';
+  }
 
-export async function saveImageBlob(blob, filename) {
-  return shareImageBlob(blob, filename);
+  downloadBlob(blob, filename);
+  return 'downloaded';
 }
 
 export async function shareSnapshot(vesselEl, canvas) {
@@ -164,31 +188,74 @@ export async function shareTreasureItems(urls) {
 }
 
 let previewState = null;
+let shareCache = null;
+
+export function setShareCache(payload) {
+  if (!payload?.blob) return;
+  const files = buildShareFiles(payload.blob, payload.filename);
+  shareCache = {
+    blob: payload.blob,
+    filename: payload.filename,
+    file: files.find(canShareFile) || files[0],
+    files,
+  };
+}
+
+export function getShareCache() {
+  return shareCache;
+}
+
+export function clearShareCache() {
+  shareCache = null;
+}
 
 export function openSharePreview({ blob, filename, imgEl, panelEl }) {
   const url = URL.createObjectURL(blob);
   previewState?.revoke?.();
-  previewState = { blob, filename, url, revoke: () => URL.revokeObjectURL(url) };
+  const files = buildShareFiles(blob, filename);
+  previewState = {
+    blob,
+    filename,
+    file: files.find(canShareFile) || files[0],
+    files,
+    url,
+    revoke: () => URL.revokeObjectURL(url),
+  };
+  setShareCache({ blob, filename });
 
   imgEl.src = url;
   panelEl.hidden = false;
   panelEl.dataset.mode = isMobile() ? 'mobile' : 'desktop';
 }
 
-export async function sharePreviewKakao() {
-  if (!previewState) return null;
-  const result = await shareImageBlob(previewState.blob, previewState.filename);
+export function sharePreviewKakaoSync() {
+  if (!previewState?.file) return { ok: false, reason: 'empty' };
+  if (!canShareFile(previewState.file)) return { ok: false, reason: 'unsupported' };
+  return { ok: true, file: previewState.file };
+}
+
+export function shareCachedKakaoSync() {
+  if (!shareCache?.file) return { ok: false, reason: 'empty' };
+  if (!canShareFile(shareCache.file)) return { ok: false, reason: 'unsupported' };
+  return { ok: true, file: shareCache.file };
+}
+
+export function sharePreviewKakaoMessage(result) {
   if (result === 'shared') return { toast: '카카오톡을 선택하세요' };
-  if (result === 'opened') return { toast: '길게 눌러 저장 후 카카오톡으로 보내세요' };
-  return { toast: '이미지를 저장했어요' };
+  if (result === 'downloaded') {
+    return { toast: isAndroid() ? '갤러리에 저장됐어요. 카카오톡에서 사진을 보내세요' : '이미지를 저장했어요' };
+  }
+  return { toast: '길게 눌러 이미지를 저장한 뒤 카카오톡으로 보내세요' };
 }
 
 export async function sharePreviewSave() {
   if (!previewState) return null;
   const result = await shareImageBlob(previewState.blob, previewState.filename);
-  if (result === 'shared') return { toast: '저장 메뉴를 선택하세요' };
-  if (result === 'opened') return { toast: '길게 눌러 사진 앨범에 저장하세요' };
-  return { toast: '이미지를 저장했어요' };
+  return sharePreviewKakaoMessage(result);
+}
+
+export function getPreviewState() {
+  return previewState;
 }
 
 export function closeSharePreview(panelEl, imgEl) {

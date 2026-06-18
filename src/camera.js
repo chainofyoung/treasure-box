@@ -1,11 +1,27 @@
 let stream = null;
+let paused = false;
+
+function hasLiveStream() {
+  return stream?.active && stream.getTracks().some((t) => t.readyState === 'live');
+}
 
 export async function startCamera(videoEl) {
+  if (hasLiveStream()) {
+    if (paused) resumeCamera();
+    videoEl.srcObject = stream;
+    try {
+      await videoEl.play();
+    } catch {
+      /* ignore */
+    }
+    return stream;
+  }
+
   stopCamera();
 
   const constraints = {
     video: {
-      facingMode: { ideal: 'environment' },
+      facingMode: 'environment',
       width: { ideal: 1920 },
       height: { ideal: 1080 },
     },
@@ -25,9 +41,26 @@ export async function startCamera(videoEl) {
     });
   }
 
+  paused = false;
   videoEl.srcObject = stream;
   await videoEl.play();
   return stream;
+}
+
+export function pauseCamera() {
+  if (!stream) return;
+  stream.getTracks().forEach((t) => {
+    t.enabled = false;
+  });
+  paused = true;
+}
+
+export function resumeCamera() {
+  if (!stream) return;
+  stream.getTracks().forEach((t) => {
+    t.enabled = true;
+  });
+  paused = false;
 }
 
 export function stopCamera() {
@@ -35,6 +68,7 @@ export function stopCamera() {
     stream.getTracks().forEach((t) => t.stop());
     stream = null;
   }
+  paused = false;
 }
 
 export function capturePhoto(videoEl, canvasEl) {
