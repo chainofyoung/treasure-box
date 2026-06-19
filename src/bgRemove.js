@@ -32,6 +32,7 @@ function buildConfig(device) {
   return {
     device,
     model: useGpu ? 'isnet_fp16' : 'isnet_quint8',
+    proxyToWorker: true,
     output: { format: 'image/png', quality: 0.82 },
   };
 }

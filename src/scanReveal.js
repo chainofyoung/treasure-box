@@ -11,8 +11,11 @@ export class ScanReveal {
   reset() {
     this.stop();
     this.wrap.style.clipPath = 'inset(0 0 100% 0)';
-    this.beam.style.top = '0%';
-    this.beam.classList.remove('done');
+    if (this.beam) {
+      this.beam.style.removeProperty('top');
+      this.beam.style.removeProperty('transform');
+      this.beam.classList.remove('done');
+    }
   }
 
   startLoop() {

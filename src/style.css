@@ -813,7 +813,7 @@ body {
 .scan-stage.scanning #preview-original,
 .scan-stage.processing #preview-original {
   animation: scan-breathe 1.6s ease-in-out infinite;
-  filter: saturate(1.02) contrast(1.03);
+  will-change: opacity;
 }
 
 .subject-border-canvas {
@@ -931,6 +931,8 @@ body {
   overflow: hidden;
   opacity: 0;
   transition: opacity 0.2s ease;
+  container-type: size;
+  transform: translateZ(0);
 }
 
 .scan-stage.scan-animating .scan-beam-wrap,
@@ -940,13 +942,54 @@ body {
   opacity: 1;
 }
 
-.scan-beam {
+.scan-beam-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 42%,
+    rgba(126, 200, 227, 0.14) 48%,
+    rgba(240, 252, 255, 0.38) 50%,
+    rgba(126, 200, 227, 0.14) 52%,
+    transparent 58%,
+    transparent 100%
+  );
+  background-size: 100% 220%;
+  background-repeat: no-repeat;
+  will-change: background-position;
+}
+
+.scan-stage.scan-animating .scan-beam-wrap::before,
+.scan-stage.scanning .scan-beam-wrap::before,
+.scan-stage.processing .scan-beam-wrap::before {
+  animation: scan-beam-bg 2.2s ease-in-out infinite alternate;
+}
+
+.scan-beam-rail {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   height: 4px;
   will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.scan-stage.scan-animating .scan-beam-rail,
+.scan-stage[data-scan-active="1"] .scan-beam-rail,
+.scan-stage.scanning .scan-beam-rail:not(.done),
+.scan-stage.processing .scan-beam-rail {
+  animation: scan-beam-sweep 2.2s ease-in-out infinite alternate;
+}
+
+.scan-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
   background: linear-gradient(
     90deg,
     transparent,
@@ -988,15 +1031,8 @@ body {
   background: linear-gradient(180deg, rgba(126, 200, 227, 0.22), transparent);
 }
 
-.scan-stage.scan-animating .scan-beam,
-.scan-stage[data-scan-active="1"] .scan-beam,
-.scan-stage.scanning .scan-beam:not(.done),
-.scan-stage.processing .scan-beam:not(.done) {
-  animation: scan-beam-sweep 2.1s ease-in-out infinite alternate;
-}
-
+.scan-stage.scan-done .scan-beam-wrap,
 .scan-beam.done {
-  animation: none !important;
   opacity: 0;
 }
 
@@ -1036,13 +1072,18 @@ body {
 }
 
 @keyframes scan-beam-sweep {
-  0% { top: 1%; }
-  100% { top: calc(99% - 4px); }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(0, calc(100dvh - 4px), 0); }
+}
+
+@keyframes scan-beam-bg {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
 }
 
 @keyframes scan-breathe {
-  0%, 100% { transform: scale(1); filter: saturate(1) brightness(1); }
-  50% { transform: scale(1.008); filter: saturate(1.06) brightness(1.05); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.94; }
 }
 
 @keyframes scan-shimmer {

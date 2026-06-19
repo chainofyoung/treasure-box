@@ -346,17 +346,16 @@ async function processCutout(dataUrl) {
     transparentCutoutUrl = rawCutout;
     previewDisplayUrl = rawCutout;
     await showCutoutResult(rawCutout);
-    processHud.finish();
     previewReady = true;
   } catch (err) {
     console.warn('Imgly cutout failed:', err);
-    scanAnimator.stop();
     transparentCutoutUrl = dataUrl;
     previewDisplayUrl = dataUrl;
     await showCutoutResult(dataUrl);
-    processHud.finish();
     previewReady = true;
   } finally {
+    scanAnimator.stop();
+    processHud.finish();
     processing = false;
     els.scanStage.classList.remove('processing');
   }
