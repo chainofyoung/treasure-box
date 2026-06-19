@@ -725,6 +725,11 @@ body {
   opacity: 1;
 }
 
+.scan-stage.scanning .scan-shimmer {
+  opacity: 1;
+  animation: scan-shimmer 2.2s ease-in-out infinite;
+}
+
 .subject-border-canvas {
   position: absolute;
   inset: 0;
@@ -837,23 +842,23 @@ body {
   left: 0;
   right: 0;
   top: 0;
-  height: 2px;
-  z-index: 4;
+  height: 3px;
+  z-index: 5;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.35s ease;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(126, 200, 227, 0.2) 20%,
-    rgba(200, 240, 255, 0.95) 50%,
-    rgba(126, 200, 227, 0.2) 80%,
+    rgba(126, 200, 227, 0.35) 18%,
+    rgba(240, 252, 255, 1) 50%,
+    rgba(126, 200, 227, 0.35) 82%,
     transparent
   );
   box-shadow:
-    0 0 18px rgba(126, 200, 227, 0.8),
-    0 0 48px rgba(126, 200, 227, 0.35);
-  transition: opacity 0.4s;
+    0 0 22px rgba(180, 240, 255, 0.95),
+    0 0 56px rgba(126, 200, 227, 0.55);
 }
 
 .scan-beam::after {
@@ -868,6 +873,7 @@ body {
 
 .scan-stage.scanning .scan-beam {
   opacity: 1;
+  visibility: visible;
 }
 
 .scan-beam.done {

@@ -1,7 +1,7 @@
 import Matter from 'matter-js';
 import { drawCapBowl } from './capRenderer.js';
 import { trimTransparent } from './trimImage.js';
-import { buildBorderLayer, drawBorderOnContext } from './borderRing.js';
+import { buildBorderLayer, drawBorderOnContext, borderMarginForSize } from './borderRing.js';
 
 const { Engine, Runner, Bodies, Body, Composite, Events, Vector } = Matter;
 
@@ -168,16 +168,18 @@ export class TreasureBox {
       };
     }
 
-    const bw = sprite.w * 0.78;
-    const bh = sprite.h * 0.78;
+    const margin = borderMarginForSize(sprite.w, sprite.borderLayer);
+    const bw = sprite.w + margin * 2;
+    const bh = sprite.h + margin * 2;
     const body = Bodies.rectangle(x, y, bw, bh, {
-      restitution: 0.5,
-      friction: 0.4,
+      restitution: 0.62,
+      friction: 0.32,
       frictionAir: 0.012,
       density: 0.0024,
       label: 'treasure',
-      chamfer: { radius: Math.min(bw, bh) * 0.18 },
+      chamfer: { radius: Math.min(bw, bh) * 0.22 },
     });
+    body._collisionPad = margin;
 
     body.sprite = sprite;
     body.isTreasure = true;
@@ -238,8 +240,9 @@ export class TreasureBox {
       const sprite = body.sprite;
       if (!sprite) return;
 
-      const halfW = sprite.w * 0.4;
-      const halfH = sprite.h * 0.4;
+      const pad = body._collisionPad ?? borderMarginForSize(sprite.w, sprite.borderLayer);
+      const halfW = (sprite.w + pad * 2) * 0.5;
+      const halfH = (sprite.h + pad * 2) * 0.5;
       const minX = halfW + 6;
       const maxX = w - halfW - 6;
       const minY = ceiling;
@@ -330,7 +333,8 @@ export class TreasureBox {
       const sprite = body.sprite;
       if (!sprite) continue;
       const dist = Vector.magnitude(Vector.sub(body.position, { x: px, y: py }));
-      const radius = Math.max(sprite.w, sprite.h) * 0.42 + 12;
+      const pad = body._collisionPad ?? borderMarginForSize(sprite.w, sprite.borderLayer);
+      const radius = Math.max(sprite.w + pad * 2, sprite.h + pad * 2) * 0.5 + 8;
       if (dist < radius && dist < minDist) {
         minDist = dist;
         hit = body;

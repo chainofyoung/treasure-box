@@ -19,10 +19,12 @@ export class ScanReveal {
     this.stop();
     this.mode = 'loop';
     this.loopT = 0;
+    this.beam?.classList.remove('done');
     const tick = () => {
       if (this.mode !== 'loop') return;
-      this.loopT += 0.012;
-      const p = (this.loopT % 1) * 92;
+      this.loopT += 0.022;
+      const phase = (Math.sin(this.loopT * 1.55) + 1) / 2;
+      const p = 3 + phase * 94;
       this.setBeam(p);
       this.raf = requestAnimationFrame(tick);
     };

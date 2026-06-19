@@ -98,6 +98,14 @@ const CAMERA_INTRO_KEY = 'camera-intro-ok';
 let tiltActivated = false;
 let cameraGranted = false;
 
+function stopScanFx() {
+  els.scanStage?.classList.remove('scanning');
+}
+
+function startScanFx() {
+  els.scanStage?.classList.add('scanning');
+}
+
 function waitFrames(count = 2) {
   return new Promise((resolve) => {
     let left = count;
@@ -285,7 +293,7 @@ function handleCapture() {
   els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
   scanReveal.reset();
   scanSweep.stop();
-  els.scanBeam.hidden = true;
+  stopScanFx();
   subjectBorder.hide();
   processHud.reset();
 
@@ -317,22 +325,26 @@ async function processCutout(dataUrl) {
   if (processing) return;
   processing = true;
 
+  await waitFrames(2);
+  scanSweep.resize();
+
   processHud.start();
+  startScanFx();
   scanSweep.start();
-  els.scanBeam.hidden = false;
   scanReveal.startLoop();
-  els.scanStage.classList.add('scanning', 'processing');
+  els.scanStage.classList.add('processing');
 
   try {
     const rawCutout = await removeBg(dataUrl, (ratio, key) => {
       processHud.setProgress(ratio, key);
+      scanReveal.setProgress(ratio);
     });
     processHud.setProgress(0.96, 'reveal');
     transparentCutoutUrl = rawCutout;
     previewDisplayUrl = rawCutout;
     scanSweep.stop();
     scanReveal.stop();
-    els.scanBeam.hidden = true;
+    stopScanFx();
     await showCutoutResult(rawCutout);
     processHud.finish();
     previewReady = true;
@@ -342,7 +354,7 @@ async function processCutout(dataUrl) {
     previewDisplayUrl = dataUrl;
     scanSweep.stop();
     scanReveal.stop();
-    els.scanBeam.hidden = true;
+    stopScanFx();
     await showCutoutResult(dataUrl);
     processHud.finish();
     previewReady = true;
@@ -380,7 +392,7 @@ async function addToBox() {
   revokeTransparent();
   scanReveal.reset();
   scanSweep.stop();
-  els.scanBeam.hidden = true;
+  stopScanFx();
   subjectBorder.hide();
   processHud.reset();
   previewReady = false;
@@ -488,7 +500,7 @@ els.btnCapture.addEventListener('click', handleCapture);
 function retakePhoto() {
   scanReveal.stop();
   scanSweep.stop();
-  els.scanBeam.hidden = true;
+  stopScanFx();
   subjectBorder.hide();
   revokeTransparent();
   processHud.reset();

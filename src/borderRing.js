@@ -1,5 +1,10 @@
 export const BORDER_THICKNESS = 4;
 
+export function borderMarginForSize(displayW, borderLayer) {
+  if (!borderLayer?.sampleW) return BORDER_THICKNESS * 1.15;
+  return BORDER_THICKNESS * (displayW / borderLayer.sampleW) * 1.15;
+}
+
 export function gradientColor(x, y, cx, cy) {
   const angle = Math.atan2(y - cy, x - cx);
   const hue = ((angle / Math.PI + 1) * 0.5 * 360) % 360;
