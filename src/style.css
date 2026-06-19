@@ -613,12 +613,26 @@ body {
   cursor: pointer;
 }
 
+.capture-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .shutter-float {
   position: absolute;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 2rem);
   transform: translateX(-50%);
   z-index: 10;
+}
+
+.capture-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  margin-right: -0.22em;
+  color: var(--mist);
 }
 
 .shutter-halo {
@@ -936,7 +950,7 @@ body {
 }
 
 .bar-float .icon-btn,
-.bar-float .box-share-btn {
+.bar-float .box-cam-btn {
   pointer-events: auto;
 }
 
@@ -991,39 +1005,33 @@ body {
   padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
 }
 
-.box-share-btn {
+.box-cam-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 1.1rem;
-  border: 1px solid rgba(180, 210, 240, 0.14);
-  border-radius: 14px;
-  background: rgba(12, 18, 32, 0.62);
-  color: var(--mist);
+  gap: 0.45rem;
+  padding: 0.55rem 1.15rem;
+  border: 1px solid rgba(126, 200, 227, 0.28);
+  border-radius: 999px;
+  background: rgba(12, 18, 32, 0.68);
+  color: var(--ice);
   cursor: pointer;
   pointer-events: auto;
-  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.box-share-btn svg {
+.box-cam-btn svg {
   width: 18px;
   height: 18px;
 }
 
-.box-share-btn span {
-  font-size: 0.58rem;
-  letter-spacing: 0.12em;
+.box-cam-btn span {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
 }
 
-.box-share-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.box-share-btn:not(:disabled):active {
+.box-cam-btn:active {
   transform: scale(0.94);
-  background: rgba(126, 200, 227, 0.12);
+  background: rgba(126, 200, 227, 0.14);
 }
 
 .share-sheet {
@@ -1034,7 +1042,7 @@ body {
   align-items: flex-end;
   justify-content: center;
   padding: 1.2rem;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
   background: rgba(4, 6, 12, 0.55);
   backdrop-filter: blur(6px);
 }

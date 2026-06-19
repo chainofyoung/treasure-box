@@ -4,8 +4,8 @@ import { trimTransparent } from './trimImage.js';
 
 const { Engine, Render, Runner, Bodies, Body, Composite, Events, Vector } = Matter;
 
-const GRAVITY_STRENGTH = 2.4;
-const GRAVITY_SCALE = 0.0034;
+const GRAVITY_STRENGTH = 1.65;
+const GRAVITY_SCALE = 0.0024;
 
 export class TreasureBox {
   constructor(canvas, frameEl) {
@@ -56,11 +56,16 @@ export class TreasureBox {
     this.initialized = false;
   }
 
+  resize() {
+    if (!this.initialized) return;
+    this._resize();
+  }
+
   _resize() {
     const rect = this.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = rect.width * dpr;
-    this.canvas.height = rect.height * dpr;
+    this.canvas.width = Math.max(1, rect.width * dpr);
+    this.canvas.height = Math.max(1, rect.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     this.bounds = { x: 0, y: 0, w: rect.width, h: rect.height };
@@ -70,6 +75,17 @@ export class TreasureBox {
       this.walls = [];
       this._createWalls();
     }
+  }
+
+  async _ensureBounds() {
+    if (this.bounds.h > 1) return;
+    this._resize();
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        this._resize();
+        resolve();
+      });
+    });
   }
 
   _getBounds() {
@@ -98,6 +114,7 @@ export class TreasureBox {
   }
 
   async addTreasure(imageUrl, { restore = false } = {}) {
+    await this._ensureBounds();
     const { w, h } = this._getBounds();
     const treasureCount = this.items.filter((b) => b.isTreasure).length;
 
@@ -111,16 +128,18 @@ export class TreasureBox {
         { isTreasure: true, dropDelay: 0 },
       );
     } else {
-      const x = w * (0.25 + Math.random() * 0.5);
-      await this._addBody(
+      const x = w * (0.2 + Math.random() * 0.6);
+      const y = Math.max(48, h * 0.1 + treasureCount * 8);
+      const body = await this._addBody(
         { type: 'image', src: imageUrl, scale: 0.16 },
         x,
-        -100 - treasureCount * 20,
-        {
-          isTreasure: true,
-          dropDelay: performance.now() + 300 + treasureCount * 200,
-        },
+        y,
+        { isTreasure: true, dropDelay: 0 },
       );
+      Body.setVelocity(body, {
+        x: (Math.random() - 0.5) * 1.4,
+        y: 1.2 + Math.random() * 0.8,
+      });
     }
 
     return this.items.filter((b) => b.isTreasure).length;
@@ -145,7 +164,7 @@ export class TreasureBox {
       restitution: 0.58,
       friction: 0.38,
       frictionAir: 0.008,
-      density: 0.0048,
+      density: 0.0032,
       label: 'treasure',
       chamfer: { radius: Math.min(bw, bh) * 0.18 },
     });

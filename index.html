@@ -56,10 +56,13 @@
             </svg>
           </button>
         </header>
-        <button id="btn-capture" class="shutter shutter-float" aria-label="촬영">
-          <span class="shutter-halo"></span>
-          <span class="shutter-core"></span>
-        </button>
+        <div class="capture-wrap shutter-float">
+          <button id="btn-capture" class="shutter" aria-label="촬영">
+            <span class="shutter-halo"></span>
+            <span class="shutter-core"></span>
+          </button>
+          <span class="capture-label">찍기</span>
+        </div>
       </section>
 
       <section id="screen-preview" class="screen screen-fill">
@@ -117,21 +120,21 @@
             <span class="box-title">줍줍일지</span>
             <span class="box-count" id="box-count">0</span>
           </div>
-          <button id="btn-add-more" class="icon-btn accent" aria-label="추가">
+          <button id="btn-share" class="icon-btn" aria-label="공유" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-              <circle cx="12" cy="13" r="4" />
-              <path d="M9 4l1.5 3M15 4l-1.5 3M12 4v2" />
+              <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
+              <path d="M5 20h14" />
             </svg>
           </button>
         </header>
 
         <footer class="bar bar-float bar-foot box-foot">
-          <button id="btn-share" class="box-share-btn" aria-label="공유" disabled>
+          <button id="btn-add-more" class="box-cam-btn" aria-label="더 찍기">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-              <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
-              <path d="M5 20h14" />
+              <path d="M4 8h2l2-3h8l2 3h2a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 012-2z" />
+              <circle cx="12" cy="14" r="3.5" />
             </svg>
-            <span>공유</span>
+            <span>더 찍기</span>
           </button>
         </footer>
 

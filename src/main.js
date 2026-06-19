@@ -96,6 +96,21 @@ let processing = false;
 let sharePrepareMode = 'snapshot';
 const CAMERA_INTRO_KEY = 'camera-intro-ok';
 let tiltActivated = false;
+let cameraGranted = false;
+
+function waitFrames(count = 2) {
+  return new Promise((resolve) => {
+    let left = count;
+    const step = () => {
+      left -= 1;
+      if (left <= 0) resolve();
+      else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+if (localStorage.getItem(CAMERA_INTRO_KEY)) cameraGranted = true;
 
 preloadModels().catch(() => {});
 bindButtonFx();
@@ -108,6 +123,9 @@ function showScreen(name) {
   });
   crackles.setActive(name !== 'box');
   if (name !== 'box') closeShareSheet();
+  if (name === 'box' && treasureBox) {
+    waitFrames(1).then(() => treasureBox.resize());
+  }
   currentScreen = name;
 }
 
@@ -223,7 +241,7 @@ function closeCameraIntro() {
 }
 
 async function openCamera(skipIntro = false) {
-  if (!skipIntro && needsCameraIntro()) {
+  if (!skipIntro && !cameraGranted && needsCameraIntro()) {
     openCameraIntro();
     return;
   }
@@ -232,6 +250,8 @@ async function openCamera(skipIntro = false) {
   preloadModels().catch(() => {});
   try {
     await startCamera(els.video);
+    cameraGranted = true;
+    localStorage.setItem(CAMERA_INTRO_KEY, '1');
   } catch (err) {
     showScreen(isFirstVisit ? 'welcome' : 'box');
     console.error(err);
@@ -250,7 +270,7 @@ function handleCapture() {
 
   revokeTransparent();
   capturedDataUrl = dataUrl;
-  stopCamera();
+  pauseCamera();
 
   els.previewOriginal.src = dataUrl;
   els.previewOriginal.hidden = false;
@@ -333,6 +353,8 @@ async function addToBox() {
 
   showScreen('box');
   await ensureBox();
+  await waitFrames(2);
+  treasureBox.resize();
 
   const { count, dataUrl } = await persistTreasure(imageUrl);
   await treasureBox.addTreasure(dataUrl);
@@ -477,7 +499,7 @@ function retakePhoto() {
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
   els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
-  openCamera();
+  openCamera(true);
 }
 
 async function goToBoxFromPreview() {
@@ -524,7 +546,7 @@ window.addEventListener('resize', () => {
   subjectBorder.resize();
 });
 els.btnBoxBack.addEventListener('click', tryReset);
-els.btnAddMore.addEventListener('click', openCamera);
+els.btnAddMore.addEventListener('click', () => openCamera(true));
 els.btnShare.addEventListener('click', openShareSheet);
 els.physicsCanvas.addEventListener('pointerdown', () => {
   if (!tiltActivated) requestTiltPermission();
