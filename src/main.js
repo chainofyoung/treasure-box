@@ -23,7 +23,7 @@ import {
   shareImageBlob,
 } from './share.js';
 import { ProcessHud } from './processHud.js';
-import { persistTreasure, loadTreasures, clearTreasures } from './storage.js';
+import { persistTreasure, loadTreasures } from './storage.js';
 
 const screens = {
   welcome: document.getElementById('screen-welcome'),
@@ -91,7 +91,7 @@ let transparentCutoutUrl = null;
 let previewDisplayUrl = null;
 let treasureBox = null;
 let isFirstVisit = true;
-let resetTap = 0;
+
 let processing = false;
 let sharePrepareMode = 'snapshot';
 const CAMERA_INTRO_KEY = 'camera-intro-ok';
@@ -218,6 +218,10 @@ function closeShareSheet() {
 
 function updateMeter(count) {
   if (els.boxCount) els.boxCount.textContent = String(count);
+}
+
+function goWelcome() {
+  showScreen('welcome');
 }
 
 function revokeTransparent() {
@@ -356,7 +360,18 @@ async function addToBox() {
   await waitFrames(2);
   treasureBox.resize();
 
-  const { count, dataUrl } = await persistTreasure(imageUrl);
+  let count;
+  let dataUrl;
+  try {
+    ({ count, dataUrl } = await persistTreasure(imageUrl));
+  } catch (err) {
+    if (err?.code === 'storage-full') {
+      showToast('저장 공간이 부족해요. 일부 항목을 지우거나 브라우저 캐시를 비워주세요');
+    } else {
+      showToast('저장하지 못했어요');
+    }
+    return;
+  }
   await treasureBox.addTreasure(dataUrl);
   updateMeter(count);
   updateShareState(count);
@@ -373,23 +388,6 @@ async function addToBox() {
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
   els.scanCutoutWrap.classList.remove('revealed');
   els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
-}
-
-function tryReset() {
-  resetTap += 1;
-  if (resetTap < 2) {
-    setTimeout(() => { resetTap = 0; }, 600);
-    return;
-  }
-  resetTap = 0;
-  clearTreasures();
-  treasureBox?.destroy();
-  treasureBox = null;
-  tiltActivated = false;
-  isFirstVisit = true;
-  updateMeter(0);
-  updateShareState(0);
-  showScreen('welcome');
 }
 
 async function openSharePreviewFrom(mode) {
@@ -545,7 +543,7 @@ window.addEventListener('resize', () => {
   scanSweep.resize();
   subjectBorder.resize();
 });
-els.btnBoxBack.addEventListener('click', tryReset);
+els.btnBoxBack.addEventListener('click', goWelcome);
 els.btnAddMore.addEventListener('click', () => openCamera(true));
 els.btnShare.addEventListener('click', openShareSheet);
 els.physicsCanvas.addEventListener('pointerdown', () => {

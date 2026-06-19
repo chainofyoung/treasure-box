@@ -917,7 +917,7 @@ body {
 
 .vessel-full {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + var(--url-bar-pad));
+  top: calc(env(safe-area-inset-top) + 3.6rem);
   left: 0;
   right: 0;
   bottom: 0;
@@ -950,7 +950,7 @@ body {
 }
 
 .bar-float .icon-btn,
-.bar-float .box-actions {
+.bar-float .box-topbar {
   pointer-events: auto;
 }
 
@@ -959,52 +959,134 @@ body {
   padding-top: calc(env(safe-area-inset-top) + var(--url-bar-pad));
 }
 
+#screen-box .bar-top {
+  padding-top: 0;
+}
+
 .bar-foot {
   bottom: 0;
   padding-bottom: calc(env(safe-area-inset-bottom) + 0.8rem);
 }
 
-.box-bar {
-  justify-content: space-between;
-  gap: 0.6rem;
+.box-topbar {
+  left: 0.75rem;
+  right: 0.75rem;
+  top: calc(env(safe-area-inset-top) + 0.45rem);
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.42rem 0.5rem 0.42rem 0.35rem;
+  border-radius: 16px;
+  background: rgba(8, 12, 22, 0.72);
+  border: 1px solid rgba(180, 210, 240, 0.12);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
 }
 
-.box-head-center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.topbar-back {
+  display: inline-flex;
   align-items: center;
   gap: 0.15rem;
+  padding: 0.35rem 0.45rem 0.35rem 0.25rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--mist-dim);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.topbar-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.topbar-back span {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+}
+
+.topbar-back:active {
+  background: rgba(180, 210, 240, 0.08);
+  color: var(--mist);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 0;
   pointer-events: none;
 }
 
-.box-title {
+.topbar-title {
   font-family: var(--font-sigil);
-  font-size: 0.72rem;
-  letter-spacing: 0.28em;
-  margin-right: -0.28em;
-  color: var(--mist-dim);
-}
-
-.box-count {
-  font-family: var(--font-sigil);
-  font-size: 1.05rem;
-  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  margin-right: -0.18em;
   color: var(--sigil);
+  white-space: nowrap;
 }
 
-.box-count::after {
-  content: '개';
-  margin-left: 0.12em;
-  font-size: 0.72rem;
+.topbar-count {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
   color: var(--mist-dim);
+  white-space: nowrap;
 }
 
-.box-actions {
+.topbar-count em {
+  font-style: normal;
+  color: var(--ice);
+  font-size: 0.74rem;
+}
+
+.topbar-actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  pointer-events: auto;
+  gap: 0.25rem;
+  padding: 0.15rem;
+  border-radius: 12px;
+  background: rgba(12, 18, 32, 0.55);
+  border: 1px solid rgba(180, 210, 240, 0.08);
+}
+
+.topbar-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--mist-dim);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.topbar-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.topbar-icon:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.topbar-icon:not(:disabled):active,
+.topbar-icon-accent:active {
+  transform: scale(0.92);
+}
+
+.topbar-icon-accent {
+  color: var(--ice);
+  background: rgba(126, 200, 227, 0.1);
 }
 
 .share-sheet {
