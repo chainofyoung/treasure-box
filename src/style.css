@@ -580,6 +580,10 @@ body {
   background: #000;
 }
 
+.cam-stage {
+  touch-action: none;
+}
+
 #camera-video,
 .scan-stage img {
   position: absolute;
@@ -602,86 +606,40 @@ body {
   justify-content: flex-start;
 }
 
+.zoom-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 6.8rem);
+  transform: translateX(-50%) translateY(6px);
+  z-index: 8;
+  padding: 0.38rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.zoom-hint.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .cam-bottom {
   position: absolute;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 1.4rem);
+  bottom: calc(env(safe-area-inset-bottom) + 1.8rem);
   transform: translateX(-50%);
   z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  width: min(88vw, 320px);
+  pointer-events: none;
 }
 
-.cam-zoom-swipe {
-  width: 100%;
-  padding: 0.65rem 0.9rem 0.55rem;
-  border-radius: 16px;
-  background: rgba(8, 12, 22, 0.72);
-  border: 1px solid rgba(180, 210, 240, 0.14);
-  backdrop-filter: blur(14px);
-  touch-action: none;
-  cursor: ew-resize;
-  user-select: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.cam-zoom-swipe.is-dragging {
-  border-color: rgba(126, 200, 227, 0.45);
-  box-shadow: 0 0 24px rgba(126, 200, 227, 0.18);
-}
-
-.cam-zoom-rail {
-  position: relative;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(180, 210, 240, 0.12);
-  overflow: visible;
-}
-
-.cam-zoom-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, rgba(126, 200, 227, 0.35), rgba(200, 245, 255, 0.85));
-  transition: width 0.08s ease-out;
-}
-
-.cam-zoom-swipe.is-dragging .cam-zoom-fill {
-  transition: none;
-}
-
-.cam-zoom-thumb {
-  position: absolute;
-  top: 50%;
-  left: 0%;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #f4fcff, #8ecae6);
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 14px rgba(126, 200, 227, 0.65);
-  transition: left 0.08s ease-out, transform 0.15s ease;
-}
-
-.cam-zoom-swipe.is-dragging .cam-zoom-thumb {
-  transition: none;
-  transform: scale(1.12);
-}
-
-.cam-zoom-swipe-label {
-  display: block;
-  margin-top: 0.45rem;
-  text-align: center;
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-  color: var(--mist-dim);
+.cam-bottom .shutter {
+  pointer-events: auto;
 }
 
 .cam-vignette {
@@ -693,64 +651,37 @@ body {
 
 .shutter {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 76px;
+  height: 76px;
   border: none;
   background: transparent;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.shutter-hero {
-  width: 92px;
-  height: 92px;
-  filter: drop-shadow(0 0 28px rgba(126, 200, 227, 0.45));
+.shutter-clean {
+  width: 72px;
+  height: 72px;
 }
 
-.shutter-ring-outer {
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 2px solid rgba(200, 240, 255, 0.28);
-  animation: halo-pulse 2.4s ease-in-out infinite;
-}
-
-.shutter-halo {
+.shutter-outer {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(200, 240, 255, 0.55);
-  animation: halo-pulse 2.4s ease-in-out infinite;
-  box-shadow:
-    0 0 36px rgba(126, 200, 227, 0.45),
-    0 0 72px rgba(126, 200, 227, 0.2),
-    inset 0 0 20px rgba(200, 245, 255, 0.15);
+  border: 4px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
 }
 
-.shutter-core {
+.shutter-inner {
   position: absolute;
-  inset: 12%;
+  inset: 7px;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.95), rgba(142, 202, 230, 0.75) 55%, rgba(70, 120, 160, 0.5));
-  border: 2px solid rgba(255, 255, 255, 0.65);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
-  z-index: 1;
-  box-shadow: 0 0 24px rgba(200, 245, 255, 0.5);
+  background: #ffffff;
+  transition: transform 0.14s ease;
 }
 
-.shutter-hero:active .shutter-core {
-  transform: scale(0.82);
-  box-shadow: 0 0 48px rgba(255, 255, 255, 0.75);
-}
-
-.shutter-hero:active .shutter-halo {
-  transform: scale(1.1);
-  border-color: rgba(255, 255, 255, 0.85);
-}
-
-@keyframes halo-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.75; }
-  50% { transform: scale(1.06); opacity: 1; }
+.shutter-clean:active .shutter-inner {
+  transform: scale(0.9);
 }
 
 /* ── scan reveal ── */

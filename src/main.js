@@ -2,8 +2,7 @@ import {
   startCamera,
   pauseCamera,
   capturePhoto,
-  bindZoomSwipe,
-  updateZoomUI,
+  bindZoomPan,
 } from './camera.js';
 import { ScanAnimator, runScanWithTask } from './scanAnimator.js';
 import { removeBg, preloadModels } from './bgRemove.js';
@@ -76,10 +75,7 @@ const els = {
   boxFrame: document.querySelector('.vessel-full'),
   boxCount: document.getElementById('box-count'),
   camStage: document.querySelector('.cam-stage'),
-  zoomSwipe: document.getElementById('cam-zoom-swipe'),
-  zoomLabel: document.getElementById('zoom-label'),
-  zoomThumb: document.getElementById('zoom-thumb'),
-  zoomFill: document.getElementById('zoom-fill'),
+  zoomHint: document.getElementById('zoom-hint'),
 };
 
 const scanReveal = new ScanReveal({
@@ -270,7 +266,6 @@ async function openCamera(skipIntro = false) {
   preloadModels().catch(() => {});
   try {
     await startCamera(els.video);
-    refreshZoomUi();
     cameraGranted = true;
     localStorage.setItem(CAMERA_INTRO_KEY, '1');
   } catch (err) {
@@ -551,20 +546,7 @@ async function shareFromPreview() {
 els.btnPreviewCamera.addEventListener('click', retakePhoto);
 els.btnPreviewBox.addEventListener('click', goToBoxFromPreview);
 els.btnPreviewShare.addEventListener('click', shareFromPreview);
-const zoomUi = {
-  get labelEl() { return els.zoomLabel; },
-  get thumbEl() { return els.zoomThumb; },
-  get fillEl() { return els.zoomFill; },
-};
-
-function refreshZoomUi() {
-  updateZoomUI(zoomUi);
-}
-
-if (els.zoomSwipe) {
-  bindZoomSwipe(els.zoomSwipe, els.video, zoomUi);
-  refreshZoomUi();
-}
+bindZoomPan(els.camStage, els.video, { hintEl: els.zoomHint });
 
 window.addEventListener('resize', () => {
   subjectBorder.resize();

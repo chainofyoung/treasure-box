@@ -5,9 +5,7 @@ let zoomLevel = 1;
 let minZoom = 1;
 let maxZoom = 4;
 let useCssZoom = true;
-let swipeStartX = 0;
-let swipeStartZoom = 1;
-let swipeDragging = false;
+
 
 function hasLiveStream() {
   return stream?.active && stream.getTracks().some((t) => t.readyState === 'live');
@@ -78,47 +76,74 @@ export function getZoomRatio() {
   return (zoomLevel - minZoom) / (maxZoom - minZoom);
 }
 
-export function updateZoomUI({ labelEl, thumbEl, fillEl } = {}) {
-  const ratio = getZoomRatio();
-  if (labelEl) labelEl.textContent = getZoomLabel();
-  if (thumbEl) thumbEl.style.left = `${ratio * 100}%`;
-  if (fillEl) fillEl.style.width = `${ratio * 100}%`;
-}
-
-export function bindZoomSwipe(stripEl, videoEl, ui = {}) {
+export function bindZoomPan(stageEl, videoEl, { hintEl } = {}) {
   videoElRef = videoEl;
-  const notify = () => {
-    updateZoomUI(ui);
-    ui.onChange?.();
+  let tracking = false;
+  let zooming = false;
+  let startX = 0;
+  let startY = 0;
+  let startZoom = 1;
+  let pointerId = null;
+  let hintTimer = null;
+
+  const showHint = () => {
+    if (!hintEl) return;
+    hintEl.textContent = getZoomLabel();
+    hintEl.classList.add('show');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => hintEl.classList.remove('show'), 750);
   };
 
-  const endDrag = () => {
-    swipeDragging = false;
-    stripEl.classList.remove('is-dragging');
+  const endGesture = () => {
+    tracking = false;
+    zooming = false;
+    pointerId = null;
   };
 
-  const moveDrag = (clientX) => {
-    const dx = clientX - swipeStartX;
-    setZoom(swipeStartZoom + dx * 0.009).then(notify);
+  const applyZoom = (clientX) => {
+    const dx = clientX - startX;
+    setZoom(startZoom + dx * 0.007).then(showHint);
   };
 
-  stripEl.addEventListener('pointerdown', (e) => {
-    swipeStartX = e.clientX;
-    swipeStartZoom = zoomLevel;
-    swipeDragging = true;
-    stripEl.classList.add('is-dragging');
-    stripEl.setPointerCapture(e.pointerId);
-    moveDrag(e.clientX);
+  stageEl.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('button, .cam-bottom, .bar-float')) return;
+    tracking = true;
+    zooming = false;
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+    startZoom = zoomLevel;
   });
 
-  stripEl.addEventListener('pointermove', (e) => {
-    if (!swipeDragging) return;
-    moveDrag(e.clientX);
+  stageEl.addEventListener('pointermove', (e) => {
+    if (!tracking || e.pointerId !== pointerId) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (!zooming) {
+      if (Math.hypot(dx, dy) < 10) return;
+      if (Math.abs(dy) > Math.abs(dx) * 1.1) {
+        endGesture();
+        return;
+      }
+      zooming = true;
+      stageEl.setPointerCapture(pointerId);
+    }
+
+    applyZoom(e.clientX);
+    e.preventDefault();
+  }, { passive: false });
+
+  stageEl.addEventListener('pointerup', (e) => {
+    if (e.pointerId !== pointerId) return;
+    endGesture();
   });
 
-  stripEl.addEventListener('pointerup', endDrag);
-  stripEl.addEventListener('pointercancel', endDrag);
-  stripEl.addEventListener('lostpointercapture', endDrag);
+  stageEl.addEventListener('pointercancel', (e) => {
+    if (e.pointerId !== pointerId) return;
+    endGesture();
+  });
 }
 
 export async function startCamera(videoEl) {

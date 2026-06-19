@@ -48,6 +48,7 @@
           <video id="camera-video" playsinline autoplay muted></video>
           <canvas id="camera-canvas" hidden></canvas>
           <div class="cam-vignette" aria-hidden="true"></div>
+          <span id="zoom-hint" class="zoom-hint" aria-hidden="true"></span>
         </div>
         <header class="bar bar-float bar-top cam-bar">
           <button id="btn-camera-back" class="icon-btn" aria-label="뒤로">
@@ -57,17 +58,9 @@
           </button>
         </header>
         <div class="cam-bottom">
-          <div id="cam-zoom-swipe" class="cam-zoom-swipe" aria-label="좌우로 밀어 줌 조절">
-            <div class="cam-zoom-rail">
-              <span class="cam-zoom-fill" id="zoom-fill"></span>
-              <span class="cam-zoom-thumb" id="zoom-thumb"></span>
-            </div>
-            <span id="zoom-label" class="cam-zoom-swipe-label">1×</span>
-          </div>
-          <button id="btn-capture" class="shutter shutter-hero" aria-label="촬영">
-            <span class="shutter-ring shutter-ring-outer"></span>
-            <span class="shutter-halo"></span>
-            <span class="shutter-core"></span>
+          <button id="btn-capture" class="shutter shutter-clean" aria-label="촬영">
+            <span class="shutter-outer"></span>
+            <span class="shutter-inner"></span>
           </button>
         </div>
       </section>
