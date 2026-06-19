@@ -2,7 +2,7 @@ import {
   startCamera,
   pauseCamera,
   capturePhoto,
-  bindZoomPan,
+  bindZoomBar,
 } from './camera.js';
 import { ScanAnimator, runScanWithTask } from './scanAnimator.js';
 import { removeBg, preloadModels } from './bgRemove.js';
@@ -75,7 +75,8 @@ const els = {
   boxFrame: document.querySelector('.vessel-full'),
   boxCount: document.getElementById('box-count'),
   camStage: document.querySelector('.cam-stage'),
-  zoomHint: document.getElementById('zoom-hint'),
+  zoomBar: document.getElementById('zoom-bar'),
+  zoomLive: document.getElementById('zoom-live'),
 };
 
 const scanReveal = new ScanReveal({
@@ -87,7 +88,6 @@ const scanReveal = new ScanReveal({
 const scanAnimator = new ScanAnimator({
   stage: els.scanStage,
   beam: els.scanBeam,
-  canvas: els.scanSweepCanvas,
 });
 const subjectBorder = new SubjectBorder(els.subjectBorder, els.scanStage);
 const processHud = new ProcessHud({
@@ -266,6 +266,7 @@ async function openCamera(skipIntro = false) {
   preloadModels().catch(() => {});
   try {
     await startCamera(els.video);
+    zoomBarCtl?.refresh?.();
     cameraGranted = true;
     localStorage.setItem(CAMERA_INTRO_KEY, '1');
   } catch (err) {
@@ -328,6 +329,9 @@ async function showCutoutResult(cutoutUrl) {
 async function processCutout(dataUrl) {
   if (processing) return;
   processing = true;
+
+  await loadImageSrc(els.previewOriginal, dataUrl);
+  await waitFrames(3);
 
   processHud.start();
   els.scanStage.classList.add('processing');
@@ -546,7 +550,7 @@ async function shareFromPreview() {
 els.btnPreviewCamera.addEventListener('click', retakePhoto);
 els.btnPreviewBox.addEventListener('click', goToBoxFromPreview);
 els.btnPreviewShare.addEventListener('click', shareFromPreview);
-bindZoomPan(els.camStage, els.video, { hintEl: els.zoomHint });
+const zoomBarCtl = bindZoomBar(els.zoomBar, els.video, { liveEl: els.zoomLive });
 
 window.addEventListener('resize', () => {
   subjectBorder.resize();

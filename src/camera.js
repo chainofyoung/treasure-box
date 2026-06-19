@@ -76,74 +76,117 @@ export function getZoomRatio() {
   return (zoomLevel - minZoom) / (maxZoom - minZoom);
 }
 
-export function bindZoomPan(stageEl, videoEl, { hintEl } = {}) {
+export function getMinZoom() {
+  return minZoom;
+}
+
+export function getMaxZoom() {
+  return maxZoom;
+}
+
+function nearestPreset(level) {
+  const presets = [1, 2, 3, maxZoom];
+  let best = presets[0];
+  let bestDist = Math.abs(level - best);
+  for (const p of presets) {
+    const d = Math.abs(level - p);
+    if (d < bestDist) {
+      best = p;
+      bestDist = d;
+    }
+  }
+  return best;
+}
+
+export function bindZoomBar(barEl, videoEl, { liveEl, onChange } = {}) {
   videoElRef = videoEl;
+  const presets = [...barEl.querySelectorAll('.zoom-preset')];
   let tracking = false;
-  let zooming = false;
+  let gestureMoved = false;
   let startX = 0;
-  let startY = 0;
   let startZoom = 1;
   let pointerId = null;
-  let hintTimer = null;
+  let liveTimer = null;
 
-  const showHint = () => {
-    if (!hintEl) return;
-    hintEl.textContent = getZoomLabel();
-    hintEl.classList.add('show');
-    clearTimeout(hintTimer);
-    hintTimer = setTimeout(() => hintEl.classList.remove('show'), 750);
+  const flashLive = () => {
+    if (!liveEl) return;
+    liveEl.textContent = getZoomLabel();
+    barEl.classList.add('show-live');
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => barEl.classList.remove('show-live'), 800);
   };
 
-  const endGesture = () => {
-    tracking = false;
-    zooming = false;
-    pointerId = null;
+  const notify = () => {
+    flashLive();
+    onChange?.(zoomLevel);
+    updateActive();
   };
 
-  const applyZoom = (clientX) => {
-    const dx = clientX - startX;
-    setZoom(startZoom + dx * 0.007).then(showHint);
+  const updateActive = () => {
+    const active = nearestPreset(zoomLevel);
+    presets.forEach((btn) => {
+      const val = btn.dataset.zoom === 'max' ? maxZoom : parseFloat(btn.dataset.zoom);
+      btn.classList.toggle('active', Math.abs(val - active) < 0.15);
+    });
   };
 
-  stageEl.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    if (e.target.closest('button, .cam-bottom, .bar-float')) return;
-    tracking = true;
-    zooming = false;
-    pointerId = e.pointerId;
-    startX = e.clientX;
-    startY = e.clientY;
-    startZoom = zoomLevel;
-  });
+  const resolvePreset = (key) => {
+    if (key === 'max') return maxZoom;
+    return parseFloat(key);
+  };
 
-  stageEl.addEventListener('pointermove', (e) => {
-    if (!tracking || e.pointerId !== pointerId) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-
-    if (!zooming) {
-      if (Math.hypot(dx, dy) < 10) return;
-      if (Math.abs(dy) > Math.abs(dx) * 1.1) {
-        endGesture();
+  presets.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (gestureMoved) {
+        e.preventDefault();
         return;
       }
-      zooming = true;
-      stageEl.setPointerCapture(pointerId);
-    }
+      setZoom(resolvePreset(btn.dataset.zoom)).then(notify);
+    });
+  });
 
-    applyZoom(e.clientX);
-    e.preventDefault();
+  const applySwipe = (clientX) => {
+    const dx = clientX - startX;
+    const span = Math.max(barEl.offsetWidth, 120);
+    const delta = (dx / span) * (maxZoom - minZoom);
+    setZoom(startZoom + delta).then(notify);
+  };
+
+  barEl.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    tracking = true;
+    gestureMoved = false;
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    startZoom = zoomLevel;
+    barEl.setPointerCapture(pointerId);
+  });
+
+  barEl.addEventListener('pointermove', (e) => {
+    if (!tracking || e.pointerId !== pointerId) return;
+    if (Math.abs(e.clientX - startX) > 8) {
+      gestureMoved = true;
+      barEl.classList.add('swiping');
+      applySwipe(e.clientX);
+      e.preventDefault();
+    }
   }, { passive: false });
 
-  stageEl.addEventListener('pointerup', (e) => {
+  const endGesture = (e) => {
     if (e.pointerId !== pointerId) return;
-    endGesture();
-  });
+    tracking = false;
+    pointerId = null;
+    barEl.classList.remove('swiping');
+    setTimeout(() => {
+      gestureMoved = false;
+    }, 0);
+  };
 
-  stageEl.addEventListener('pointercancel', (e) => {
-    if (e.pointerId !== pointerId) return;
-    endGesture();
-  });
+  barEl.addEventListener('pointerup', endGesture);
+  barEl.addEventListener('pointercancel', endGesture);
+
+  notify();
+  return { refresh: updateActive };
 }
 
 export async function startCamera(videoEl) {

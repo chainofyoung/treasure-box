@@ -48,7 +48,7 @@
           <video id="camera-video" playsinline autoplay muted></video>
           <canvas id="camera-canvas" hidden></canvas>
           <div class="cam-vignette" aria-hidden="true"></div>
-          <span id="zoom-hint" class="zoom-hint" aria-hidden="true"></span>
+
         </div>
         <header class="bar bar-float bar-top cam-bar">
           <button id="btn-camera-back" class="icon-btn" aria-label="뒤로">
@@ -58,6 +58,13 @@
           </button>
         </header>
         <div class="cam-bottom">
+          <div id="zoom-bar" class="zoom-bar" role="group" aria-label="카메라 줌">
+            <button type="button" class="zoom-preset" data-zoom="1">×1</button>
+            <button type="button" class="zoom-preset" data-zoom="2">×2</button>
+            <button type="button" class="zoom-preset" data-zoom="3">×3</button>
+            <button type="button" class="zoom-preset" data-zoom="max">×최대</button>
+            <span id="zoom-live" class="zoom-live" aria-hidden="true"></span>
+          </div>
           <button id="btn-capture" class="shutter shutter-clean" aria-label="촬영">
             <span class="shutter-outer"></span>
             <span class="shutter-inner"></span>
@@ -76,7 +83,9 @@
           <canvas id="scan-sweep" class="scan-sweep" aria-hidden="true"></canvas>
           <div class="scan-shimmer" aria-hidden="true"></div>
           <p id="scan-status" class="scan-status-float">줍는 중…</p>
-          <div id="scan-beam" class="scan-beam" aria-hidden="true"></div>
+          <div class="scan-beam-wrap" aria-hidden="true">
+            <div id="scan-beam" class="scan-beam"></div>
+          </div>
         </div>
         <footer class="preview-dock">
           <button id="btn-preview-camera" class="dock-btn" aria-label="다시 찍기">

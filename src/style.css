@@ -581,7 +581,7 @@ body {
 }
 
 .cam-stage {
-  touch-action: none;
+  touch-action: manipulation;
 }
 
 #camera-video,
@@ -635,11 +635,81 @@ body {
   bottom: calc(env(safe-area-inset-bottom) + 1.8rem);
   transform: translateX(-50%);
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
   pointer-events: none;
 }
 
-.cam-bottom .shutter {
+.cam-bottom .shutter,
+.cam-bottom .zoom-bar {
   pointer-events: auto;
+}
+
+.zoom-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.32rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
+  touch-action: none;
+  cursor: ew-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.zoom-preset {
+  position: relative;
+  z-index: 1;
+  min-width: 2.35rem;
+  padding: 0.34rem 0.42rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.zoom-preset.active {
+  color: #fff;
+  background: rgba(126, 200, 227, 0.28);
+}
+
+.zoom-preset:active {
+  transform: scale(0.94);
+}
+
+.zoom-live {
+  position: absolute;
+  top: -1.55rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 0.28rem 0.62rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.74rem;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  white-space: nowrap;
+}
+
+.zoom-bar:active .zoom-live,
+.zoom-bar.swiping .zoom-live,
+.zoom-bar.show-live .zoom-live {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .cam-vignette {
@@ -727,28 +797,23 @@ body {
 }
 
 .scan-sweep {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  display: none;
 }
 
-.scan-stage[data-scan-active="1"] .scan-sweep,
-.scan-stage.scanning .scan-sweep {
-  opacity: 1;
-}
-
+.scan-stage.scan-animating .scan-shimmer,
 .scan-stage[data-scan-active="1"] .scan-shimmer,
-.scan-stage.scanning .scan-shimmer {
+.scan-stage.scanning .scan-shimmer,
+.scan-stage.processing .scan-shimmer {
   opacity: 1;
-  animation: scan-shimmer 2.2s ease-in-out infinite;
+  animation: scan-shimmer 1.8s linear infinite;
 }
 
+.scan-stage.scan-animating #preview-original,
 .scan-stage[data-scan-active="1"] #preview-original,
+.scan-stage.scanning #preview-original,
 .scan-stage.processing #preview-original {
-  animation: scan-breathe 1.8s ease-in-out infinite;
+  animation: scan-breathe 1.6s ease-in-out infinite;
+  filter: saturate(1.02) contrast(1.03);
 }
 
 .subject-border-canvas {
@@ -858,28 +923,59 @@ body {
   color: var(--ice);
 }
 
+.scan-beam-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.scan-stage.scan-animating .scan-beam-wrap,
+.scan-stage[data-scan-active="1"] .scan-beam-wrap,
+.scan-stage.scanning .scan-beam-wrap,
+.scan-stage.processing .scan-beam-wrap {
+  opacity: 1;
+}
+
 .scan-beam {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
-  height: 3px;
-  z-index: 5;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  height: 4px;
+  will-change: transform;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(126, 200, 227, 0.35) 18%,
+    rgba(126, 200, 227, 0.45) 15%,
     rgba(240, 252, 255, 1) 50%,
-    rgba(126, 200, 227, 0.35) 82%,
+    rgba(126, 200, 227, 0.45) 85%,
     transparent
   );
   box-shadow:
-    0 0 22px rgba(180, 240, 255, 0.95),
-    0 0 56px rgba(126, 200, 227, 0.55);
+    0 0 18px rgba(180, 240, 255, 1),
+    0 0 48px rgba(126, 200, 227, 0.7),
+    0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.scan-beam::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -52px;
+  height: 104px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(126, 200, 227, 0.18) 42%,
+    rgba(200, 245, 255, 0.32) 50%,
+    rgba(126, 200, 227, 0.18) 58%,
+    transparent
+  );
 }
 
 .scan-beam::after {
@@ -887,55 +983,71 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  top: -40px;
-  height: 80px;
-  background: linear-gradient(180deg, transparent, rgba(126, 200, 227, 0.12), transparent);
+  top: 4px;
+  height: 28px;
+  background: linear-gradient(180deg, rgba(126, 200, 227, 0.22), transparent);
 }
 
+.scan-stage.scan-animating .scan-beam,
 .scan-stage[data-scan-active="1"] .scan-beam,
-.scan-stage.scanning .scan-beam {
-  opacity: 1 !important;
-  visibility: visible !important;
+.scan-stage.scanning .scan-beam:not(.done),
+.scan-stage.processing .scan-beam:not(.done) {
+  animation: scan-beam-sweep 2.1s ease-in-out infinite alternate;
 }
 
 .scan-beam.done {
+  animation: none !important;
   opacity: 0;
-}
-
-.scan-stage.processing #preview-original {
-  animation: scan-breathe 1.8s ease-in-out infinite;
 }
 
 .scan-shimmer {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
   opacity: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0,
+    transparent 3px,
+    rgba(126, 200, 227, 0.04) 3px,
+    rgba(126, 200, 227, 0.04) 4px
+  );
+  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.scan-stage.scan-animating .scan-shimmer::after,
+.scan-stage.scanning .scan-shimmer::after,
+.scan-stage.processing .scan-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     105deg,
     transparent 38%,
-    rgba(180, 230, 255, 0.12) 48%,
-    rgba(220, 245, 255, 0.22) 50%,
-    rgba(180, 230, 255, 0.12) 52%,
+    rgba(180, 230, 255, 0.14) 48%,
+    rgba(220, 245, 255, 0.28) 50%,
+    rgba(180, 230, 255, 0.14) 52%,
     transparent 62%
   );
   background-size: 220% 100%;
+  animation: scan-shimmer 1.8s linear infinite;
 }
 
-.scan-stage.processing .scan-shimmer {
-  opacity: 1;
-  animation: scan-shimmer 2.2s ease-in-out infinite;
+@keyframes scan-beam-sweep {
+  0% { top: 1%; }
+  100% { top: calc(99% - 4px); }
 }
 
 @keyframes scan-breathe {
   0%, 100% { transform: scale(1); filter: saturate(1) brightness(1); }
-  50% { transform: scale(1.012); filter: saturate(1.05) brightness(1.06); }
+  50% { transform: scale(1.008); filter: saturate(1.06) brightness(1.05); }
 }
 
 @keyframes scan-shimmer {
-  0% { background-position: 120% 0; }
-  100% { background-position: -40% 0; }
+  0% { background-position: 130% 0; }
+  100% { background-position: -50% 0; }
 }
 
 /* ── vessel fullscreen ── */

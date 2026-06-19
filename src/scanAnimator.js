@@ -1,60 +1,47 @@
-import { ScanSweep } from './scanSweep.js';
-
 const MIN_PHASE_MS = 2200;
+const TASK_DEFER_MS = 80;
 
 export class ScanAnimator {
-  constructor({ stage, beam, canvas }) {
+  constructor({ stage, beam }) {
     this.stage = stage;
     this.beam = beam;
-    this.sweep = new ScanSweep(canvas, stage);
-    this.raf = null;
-    this.t = 0;
     this.active = false;
   }
 
   async ensureLayout() {
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 48; i++) {
       const rect = this.stage.getBoundingClientRect();
-      if (rect.width > 64 && rect.height > 64) {
-        this.sweep.resize();
-        return;
-      }
+      if (rect.width > 64 && rect.height > 64) return;
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
-    this.sweep.resize();
   }
 
   start() {
     this.stop();
     this.active = true;
-    this.t = 0;
     this.stage.dataset.scanActive = '1';
+    this.stage.classList.add('scan-animating');
     this.beam?.classList.remove('done');
-    this.beam.style.visibility = 'visible';
-    this.beam.style.opacity = '1';
-    this.sweep.start();
-
-    const tick = () => {
-      if (!this.active) return;
-      this.t += 0.024;
-      const phase = (Math.sin(this.t * 1.5) + 1) / 2;
-      const top = 2 + phase * 96;
-      if (this.beam) this.beam.style.top = `${top}%`;
-      this.raf = requestAnimationFrame(tick);
-    };
-    this.raf = requestAnimationFrame(tick);
+    if (this.beam) {
+      this.beam.style.animation = '';
+      this.beam.style.top = '';
+      this.beam.style.transform = '';
+      this.beam.style.visibility = 'visible';
+      this.beam.style.opacity = '';
+    }
+    void this.stage.offsetHeight;
   }
 
   stop() {
     this.active = false;
-    if (this.raf) cancelAnimationFrame(this.raf);
-    this.raf = null;
-    this.sweep.stop();
+    this.stage.classList.remove('scan-animating');
     delete this.stage.dataset.scanActive;
     if (this.beam) {
+      this.beam.style.animation = 'none';
       this.beam.style.visibility = '';
       this.beam.style.opacity = '';
-      this.beam.style.top = '0%';
+      this.beam.style.top = '';
+      this.beam.style.transform = '';
     }
   }
 
@@ -73,9 +60,17 @@ export class ScanAnimator {
 export async function runScanWithTask(animator, task) {
   await animator.ensureLayout();
   animator.start();
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+
+  const deferredTask = new Promise((resolve) => {
+    setTimeout(() => task().then(resolve), TASK_DEFER_MS);
+  });
+
   const [, result] = await Promise.all([
     animator.runFor(MIN_PHASE_MS),
-    task(),
+    deferredTask,
   ]);
   animator.stop();
   return result;
