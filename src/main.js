@@ -1,7 +1,16 @@
-import { startCamera, stopCamera, pauseCamera, capturePhoto } from './camera.js';
+import {
+  startCamera,
+  pauseCamera,
+  capturePhoto,
+  zoomIn,
+  zoomOut,
+  getZoomLabel,
+  bindZoomGestures,
+} from './camera.js';
+import { ScanAnimator, runScanWithTask } from './scanAnimator.js';
 import { removeBg, preloadModels } from './bgRemove.js';
 import { ScanReveal } from './scanReveal.js';
-import { ScanSweep } from './scanSweep.js';
+
 import { SubjectBorder } from './subjectBorder.js';
 import { TreasureBox } from './physics.js';
 import { bindButtonFx } from './uiFx.js';
@@ -68,6 +77,10 @@ const els = {
   physicsCanvas: document.getElementById('physics-canvas'),
   boxFrame: document.querySelector('.vessel-full'),
   boxCount: document.getElementById('box-count'),
+  camStage: document.querySelector('.cam-stage'),
+  btnZoomIn: document.getElementById('btn-zoom-in'),
+  btnZoomOut: document.getElementById('btn-zoom-out'),
+  zoomLabel: document.getElementById('zoom-label'),
 };
 
 const scanReveal = new ScanReveal({
@@ -76,7 +89,11 @@ const scanReveal = new ScanReveal({
   cutoutImg: els.previewCutout,
 });
 
-const scanSweep = new ScanSweep(els.scanSweepCanvas, els.scanStage);
+const scanAnimator = new ScanAnimator({
+  stage: els.scanStage,
+  beam: els.scanBeam,
+  canvas: els.scanSweepCanvas,
+});
 const subjectBorder = new SubjectBorder(els.subjectBorder, els.scanStage);
 const processHud = new ProcessHud({
   stage: els.scanStage,
@@ -97,14 +114,6 @@ let sharePrepareMode = 'snapshot';
 const CAMERA_INTRO_KEY = 'camera-intro-ok';
 let tiltActivated = false;
 let cameraGranted = false;
-
-function stopScanFx() {
-  els.scanStage?.classList.remove('scanning');
-}
-
-function startScanFx() {
-  els.scanStage?.classList.add('scanning');
-}
 
 function waitFrames(count = 2) {
   return new Promise((resolve) => {
@@ -262,6 +271,7 @@ async function openCamera(skipIntro = false) {
   preloadModels().catch(() => {});
   try {
     await startCamera(els.video);
+    updateZoomLabel();
     cameraGranted = true;
     localStorage.setItem(CAMERA_INTRO_KEY, '1');
   } catch (err) {
@@ -289,11 +299,11 @@ function handleCapture() {
   previewReady = false;
   screens.preview.classList.remove('scan-complete');
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
+  delete els.scanStage.dataset.scanActive;
   els.scanCutoutWrap.classList.remove('revealed');
   els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
   scanReveal.reset();
-  scanSweep.stop();
-  stopScanFx();
+  scanAnimator.stop();
   subjectBorder.hide();
   processHud.reset();
 
@@ -325,41 +335,32 @@ async function processCutout(dataUrl) {
   if (processing) return;
   processing = true;
 
-  await waitFrames(2);
-  scanSweep.resize();
-
   processHud.start();
-  startScanFx();
-  scanSweep.start();
-  scanReveal.startLoop();
   els.scanStage.classList.add('processing');
 
   try {
-    const rawCutout = await removeBg(dataUrl, (ratio, key) => {
-      processHud.setProgress(ratio, key);
-      scanReveal.setProgress(ratio);
+    const rawCutout = await runScanWithTask(scanAnimator, async () => {
+      return removeBg(dataUrl, (ratio, key) => {
+        processHud.setProgress(ratio, key);
+      });
     });
     processHud.setProgress(0.96, 'reveal');
     transparentCutoutUrl = rawCutout;
     previewDisplayUrl = rawCutout;
-    scanSweep.stop();
-    scanReveal.stop();
-    stopScanFx();
     await showCutoutResult(rawCutout);
     processHud.finish();
     previewReady = true;
   } catch (err) {
     console.warn('Imgly cutout failed:', err);
+    scanAnimator.stop();
     transparentCutoutUrl = dataUrl;
     previewDisplayUrl = dataUrl;
-    scanSweep.stop();
-    scanReveal.stop();
-    stopScanFx();
     await showCutoutResult(dataUrl);
     processHud.finish();
     previewReady = true;
   } finally {
     processing = false;
+    els.scanStage.classList.remove('processing');
   }
 }
 
@@ -391,13 +392,13 @@ async function addToBox() {
   capturedDataUrl = null;
   revokeTransparent();
   scanReveal.reset();
-  scanSweep.stop();
-  stopScanFx();
+  scanAnimator.stop();
   subjectBorder.hide();
   processHud.reset();
   previewReady = false;
   screens.preview.classList.remove('scan-complete');
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
+  delete els.scanStage.dataset.scanActive;
   els.scanCutoutWrap.classList.remove('revealed');
   els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
 }
@@ -499,14 +500,14 @@ els.btnCameraBack.addEventListener('click', () => {
 els.btnCapture.addEventListener('click', handleCapture);
 function retakePhoto() {
   scanReveal.stop();
-  scanSweep.stop();
-  stopScanFx();
+  scanAnimator.stop();
   subjectBorder.hide();
   revokeTransparent();
   processHud.reset();
   previewReady = false;
   screens.preview.classList.remove('scan-complete');
   els.scanStage.classList.remove('scan-done', 'scanning', 'processing');
+  delete els.scanStage.dataset.scanActive;
   els.scanCutoutWrap.classList.remove('revealed');
   els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
   openCamera(true);
@@ -551,8 +552,19 @@ async function shareFromPreview() {
 els.btnPreviewCamera.addEventListener('click', retakePhoto);
 els.btnPreviewBox.addEventListener('click', goToBoxFromPreview);
 els.btnPreviewShare.addEventListener('click', shareFromPreview);
+function updateZoomLabel() {
+  if (els.zoomLabel) els.zoomLabel.textContent = getZoomLabel();
+}
+
+bindZoomGestures(els.camStage, els.video, updateZoomLabel);
+els.btnZoomIn?.addEventListener('click', () => {
+  zoomIn().then(updateZoomLabel);
+});
+els.btnZoomOut?.addEventListener('click', () => {
+  zoomOut().then(updateZoomLabel);
+});
+
 window.addEventListener('resize', () => {
-  scanSweep.resize();
   subjectBorder.resize();
 });
 els.btnBoxBack.addEventListener('click', goWelcome);

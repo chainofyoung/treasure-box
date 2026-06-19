@@ -52,7 +52,8 @@ export class ProcessHud {
     this._render();
     this._setStatus('완료');
     this.stop();
-    this.stage.classList.remove('processing');
+    this.stage.classList.remove('processing', 'scanning');
+    delete this.stage.dataset.scanActive;
   }
 
   stop() {
@@ -64,7 +65,8 @@ export class ProcessHud {
     this.stop();
     this.display = 0;
     this.target = 0;
-    this.stage.classList.remove('processing');
+    this.stage.classList.remove('processing', 'scanning');
+    delete this.stage.dataset.scanActive;
     this._render();
     this._setStatus('');
   }

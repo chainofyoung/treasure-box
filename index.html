@@ -49,12 +49,17 @@
           <canvas id="camera-canvas" hidden></canvas>
           <div class="cam-vignette" aria-hidden="true"></div>
         </div>
-        <header class="bar bar-float bar-top">
+        <header class="bar bar-float bar-top cam-bar">
           <button id="btn-camera-back" class="icon-btn" aria-label="뒤로">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
               <path d="M15 6l-6 6 6 6" />
             </svg>
           </button>
+          <div class="cam-zoom" aria-label="줌">
+            <button id="btn-zoom-out" class="cam-zoom-btn" type="button" aria-label="줌아웃">−</button>
+            <span id="zoom-label" class="cam-zoom-label">1×</span>
+            <button id="btn-zoom-in" class="cam-zoom-btn" type="button" aria-label="줌인">+</button>
+          </div>
         </header>
         <div class="capture-wrap shutter-float">
           <button id="btn-capture" class="shutter" aria-label="촬영">

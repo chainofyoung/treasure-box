@@ -595,6 +595,51 @@ body {
 
 #camera-video {
   filter: saturate(0.9) contrast(1.04);
+  transition: transform 0.15s ease-out;
+}
+
+.cam-bar {
+  justify-content: space-between;
+}
+
+.cam-zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(8, 12, 22, 0.68);
+  border: 1px solid rgba(180, 210, 240, 0.14);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+}
+
+.cam-zoom-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(126, 200, 227, 0.12);
+  color: var(--ice);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cam-zoom-btn:active {
+  transform: scale(0.9);
+  background: rgba(126, 200, 227, 0.22);
+}
+
+.cam-zoom-label {
+  min-width: 2rem;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--mist);
 }
 
 .cam-vignette {
@@ -717,17 +762,23 @@ body {
   z-index: 4;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s ease;
-  mix-blend-mode: screen;
+  transition: opacity 0.2s ease;
 }
 
+.scan-stage[data-scan-active="1"] .scan-sweep,
 .scan-stage.scanning .scan-sweep {
   opacity: 1;
 }
 
+.scan-stage[data-scan-active="1"] .scan-shimmer,
 .scan-stage.scanning .scan-shimmer {
   opacity: 1;
   animation: scan-shimmer 2.2s ease-in-out infinite;
+}
+
+.scan-stage[data-scan-active="1"] #preview-original,
+.scan-stage.processing #preview-original {
+  animation: scan-breathe 1.8s ease-in-out infinite;
 }
 
 .subject-border-canvas {
@@ -871,9 +922,10 @@ body {
   background: linear-gradient(180deg, transparent, rgba(126, 200, 227, 0.12), transparent);
 }
 
+.scan-stage[data-scan-active="1"] .scan-beam,
 .scan-stage.scanning .scan-beam {
-  opacity: 1;
-  visibility: visible;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .scan-beam.done {
