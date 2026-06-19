@@ -2,10 +2,8 @@ import {
   startCamera,
   pauseCamera,
   capturePhoto,
-  zoomIn,
-  zoomOut,
-  getZoomLabel,
-  bindZoomGestures,
+  bindZoomSwipe,
+  updateZoomUI,
 } from './camera.js';
 import { ScanAnimator, runScanWithTask } from './scanAnimator.js';
 import { removeBg, preloadModels } from './bgRemove.js';
@@ -78,9 +76,10 @@ const els = {
   boxFrame: document.querySelector('.vessel-full'),
   boxCount: document.getElementById('box-count'),
   camStage: document.querySelector('.cam-stage'),
-  btnZoomIn: document.getElementById('btn-zoom-in'),
-  btnZoomOut: document.getElementById('btn-zoom-out'),
+  zoomSwipe: document.getElementById('cam-zoom-swipe'),
   zoomLabel: document.getElementById('zoom-label'),
+  zoomThumb: document.getElementById('zoom-thumb'),
+  zoomFill: document.getElementById('zoom-fill'),
 };
 
 const scanReveal = new ScanReveal({
@@ -271,7 +270,7 @@ async function openCamera(skipIntro = false) {
   preloadModels().catch(() => {});
   try {
     await startCamera(els.video);
-    updateZoomLabel();
+    refreshZoomUi();
     cameraGranted = true;
     localStorage.setItem(CAMERA_INTRO_KEY, '1');
   } catch (err) {
@@ -552,17 +551,20 @@ async function shareFromPreview() {
 els.btnPreviewCamera.addEventListener('click', retakePhoto);
 els.btnPreviewBox.addEventListener('click', goToBoxFromPreview);
 els.btnPreviewShare.addEventListener('click', shareFromPreview);
-function updateZoomLabel() {
-  if (els.zoomLabel) els.zoomLabel.textContent = getZoomLabel();
+const zoomUi = {
+  get labelEl() { return els.zoomLabel; },
+  get thumbEl() { return els.zoomThumb; },
+  get fillEl() { return els.zoomFill; },
+};
+
+function refreshZoomUi() {
+  updateZoomUI(zoomUi);
 }
 
-bindZoomGestures(els.camStage, els.video, updateZoomLabel);
-els.btnZoomIn?.addEventListener('click', () => {
-  zoomIn().then(updateZoomLabel);
-});
-els.btnZoomOut?.addEventListener('click', () => {
-  zoomOut().then(updateZoomLabel);
-});
+if (els.zoomSwipe) {
+  bindZoomSwipe(els.zoomSwipe, els.video, zoomUi);
+  refreshZoomUi();
+}
 
 window.addEventListener('resize', () => {
   subjectBorder.resize();

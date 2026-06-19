@@ -5,8 +5,9 @@ let zoomLevel = 1;
 let minZoom = 1;
 let maxZoom = 4;
 let useCssZoom = true;
-let pinchStartDist = 0;
-let pinchStartZoom = 1;
+let swipeStartX = 0;
+let swipeStartZoom = 1;
+let swipeDragging = false;
 
 function hasLiveStream() {
   return stream?.active && stream.getTracks().some((t) => t.readyState === 'live');
@@ -72,40 +73,52 @@ export async function setZoom(level) {
   return zoomLevel;
 }
 
-export async function zoomIn() {
-  return setZoom(zoomLevel + 0.4);
+export function getZoomRatio() {
+  if (maxZoom <= minZoom) return 0;
+  return (zoomLevel - minZoom) / (maxZoom - minZoom);
 }
 
-export async function zoomOut() {
-  return setZoom(zoomLevel - 0.4);
+export function updateZoomUI({ labelEl, thumbEl, fillEl } = {}) {
+  const ratio = getZoomRatio();
+  if (labelEl) labelEl.textContent = getZoomLabel();
+  if (thumbEl) thumbEl.style.left = `${ratio * 100}%`;
+  if (fillEl) fillEl.style.width = `${ratio * 100}%`;
 }
 
-function pinchDistance(touches) {
-  const dx = touches[0].clientX - touches[1].clientX;
-  const dy = touches[0].clientY - touches[1].clientY;
-  return Math.hypot(dx, dy);
-}
-
-export function bindZoomGestures(stageEl, videoEl, onChange) {
+export function bindZoomSwipe(stripEl, videoEl, ui = {}) {
   videoElRef = videoEl;
-  const notify = () => onChange?.();
+  const notify = () => {
+    updateZoomUI(ui);
+    ui.onChange?.();
+  };
 
-  stageEl.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 2) return;
-    pinchStartDist = pinchDistance(e.touches);
-    pinchStartZoom = zoomLevel;
-  }, { passive: true });
+  const endDrag = () => {
+    swipeDragging = false;
+    stripEl.classList.remove('is-dragging');
+  };
 
-  stageEl.addEventListener('touchmove', (e) => {
-    if (e.touches.length !== 2 || !pinchStartDist) return;
-    const dist = pinchDistance(e.touches);
-    const ratio = dist / pinchStartDist;
-    setZoom(pinchStartZoom * ratio).then(notify);
-  }, { passive: true });
+  const moveDrag = (clientX) => {
+    const dx = clientX - swipeStartX;
+    setZoom(swipeStartZoom + dx * 0.009).then(notify);
+  };
 
-  stageEl.addEventListener('touchend', (e) => {
-    if (e.touches.length < 2) pinchStartDist = 0;
-  }, { passive: true });
+  stripEl.addEventListener('pointerdown', (e) => {
+    swipeStartX = e.clientX;
+    swipeStartZoom = zoomLevel;
+    swipeDragging = true;
+    stripEl.classList.add('is-dragging');
+    stripEl.setPointerCapture(e.pointerId);
+    moveDrag(e.clientX);
+  });
+
+  stripEl.addEventListener('pointermove', (e) => {
+    if (!swipeDragging) return;
+    moveDrag(e.clientX);
+  });
+
+  stripEl.addEventListener('pointerup', endDrag);
+  stripEl.addEventListener('pointercancel', endDrag);
+  stripEl.addEventListener('lostpointercapture', endDrag);
 }
 
 export async function startCamera(videoEl) {
