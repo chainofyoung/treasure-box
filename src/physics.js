@@ -1,11 +1,14 @@
 import Matter from 'matter-js';
 import { drawCapBowl } from './capRenderer.js';
 import { trimTransparent } from './trimImage.js';
+import { buildBorderLayer, drawBorderOnContext } from './borderRing.js';
 
-const { Engine, Render, Runner, Bodies, Body, Composite, Events, Vector } = Matter;
+const { Engine, Runner, Bodies, Body, Composite, Events, Vector } = Matter;
 
-const GRAVITY_STRENGTH = 1.65;
-const GRAVITY_SCALE = 0.0024;
+const GRAVITY_STRENGTH = 1.05;
+const GRAVITY_SCALE = 0.0017;
+const MAX_SPEED = 16;
+const CEILING_Y = 52;
 
 export class TreasureBox {
   constructor(canvas, frameEl) {
@@ -49,9 +52,6 @@ export class TreasureBox {
     Runner.stop(this.runner);
     Events.off(this.engine);
     this._resizeObserver?.disconnect();
-    this.sprites.forEach((s) => {
-      if (s.type === 'image') URL.revokeObjectURL(s.src);
-    });
     this.sprites.clear();
     this.initialized = false;
   }
@@ -95,32 +95,37 @@ export class TreasureBox {
 
   _createWalls() {
     const { w, h } = this.bounds;
-    const thick = 80;
+    const thick = 120;
     const opts = {
       isStatic: true,
       friction: 0.4,
-      restitution: 0.45,
+      restitution: 0.35,
       render: { visible: false },
     };
 
     this.walls = [
-      Bodies.rectangle(w / 2, h + thick / 2 - 2, w + thick, thick, opts),
-      Bodies.rectangle(-thick / 2 + 2, h / 2, thick, h + thick, opts),
-      Bodies.rectangle(w + thick / 2 - 2, h / 2, thick, h + thick, opts),
-      Bodies.rectangle(w / 2, -thick * 2, w + thick, thick, opts),
+      Bodies.rectangle(w / 2, h + thick / 2 - 2, w + thick * 2, thick, opts),
+      Bodies.rectangle(-thick / 2 + 2, h / 2, thick, h + thick * 2, opts),
+      Bodies.rectangle(w + thick / 2 - 2, h / 2, thick, h + thick * 2, opts),
+      Bodies.rectangle(w / 2, -thick / 2 + CEILING_Y * 0.35, w + thick * 2, thick, opts),
     ];
 
     Composite.add(this.engine.world, this.walls);
+  }
+
+  _ceilingY() {
+    return CEILING_Y;
   }
 
   async addTreasure(imageUrl, { restore = false } = {}) {
     await this._ensureBounds();
     const { w, h } = this._getBounds();
     const treasureCount = this.items.filter((b) => b.isTreasure).length;
+    const ceiling = this._ceilingY();
 
     if (restore) {
-      const x = w * (0.12 + Math.random() * 0.76);
-      const y = h * (0.35 + Math.random() * 0.5);
+      const x = w * (0.12 + (treasureCount % 6) * 0.14);
+      const y = ceiling + (treasureCount % 4) * 16;
       await this._addBody(
         { type: 'image', src: imageUrl, scale: 0.16 },
         x,
@@ -128,8 +133,8 @@ export class TreasureBox {
         { isTreasure: true, dropDelay: 0 },
       );
     } else {
-      const x = w * (0.2 + Math.random() * 0.6);
-      const y = Math.max(48, h * 0.1 + treasureCount * 8);
+      const x = w * (0.14 + Math.random() * 0.72);
+      const y = ceiling + (treasureCount % 5) * 14;
       const body = await this._addBody(
         { type: 'image', src: imageUrl, scale: 0.16 },
         x,
@@ -137,8 +142,8 @@ export class TreasureBox {
         { isTreasure: true, dropDelay: 0 },
       );
       Body.setVelocity(body, {
-        x: (Math.random() - 0.5) * 1.4,
-        y: 1.2 + Math.random() * 0.8,
+        x: (Math.random() - 0.5) * 0.5,
+        y: 0.15 + Math.random() * 0.35,
       });
     }
 
@@ -146,7 +151,6 @@ export class TreasureBox {
   }
 
   async _addBody(def, x, y, meta = {}) {
-    let size;
     let sprite;
 
     if (def.type === 'image') {
@@ -154,17 +158,23 @@ export class TreasureBox {
       const img = await this._loadImage(trimmed.dataUrl);
       const aspect = trimmed.aspect;
       const baseH = this.bounds.h * (def.scale || 0.3);
-      size = { w: baseH * aspect, h: baseH };
-      sprite = { type: 'image', img, ...size };
+      const borderLayer = buildBorderLayer(img);
+      sprite = {
+        type: 'image',
+        img,
+        borderLayer,
+        w: baseH * aspect,
+        h: baseH,
+      };
     }
 
     const bw = sprite.w * 0.78;
     const bh = sprite.h * 0.78;
     const body = Bodies.rectangle(x, y, bw, bh, {
-      restitution: 0.58,
-      friction: 0.38,
-      frictionAir: 0.008,
-      density: 0.0032,
+      restitution: 0.5,
+      friction: 0.4,
+      frictionAir: 0.012,
+      density: 0.0024,
       label: 'treasure',
       chamfer: { radius: Math.min(bw, bh) * 0.18 },
     });
@@ -206,11 +216,70 @@ export class TreasureBox {
 
   handleOrientation(beta, gamma) {
     if (!this.tiltEnabled) return;
-    const gx = Math.max(-1.6, Math.min(1.6, (gamma || 0) / 32));
-    const gy = Math.max(-1.6, Math.min(1.6, ((beta || 0) - 45) / 32));
+    const gx = Math.max(-1.3, Math.min(1.3, (gamma || 0) / 36));
+    const gy = Math.max(-1.3, Math.min(1.3, ((beta || 0) - 45) / 36));
     this.gravity = { x: gx * GRAVITY_STRENGTH, y: gy * GRAVITY_STRENGTH };
     this.engine.gravity.x = gx * GRAVITY_STRENGTH;
     this.engine.gravity.y = gy * GRAVITY_STRENGTH;
+  }
+
+  /**
+   * 객체가 "사라지는" 것처럼 보이는 이유:
+   * 삭제되지 않고 화면 밖(특히 천장 위·좌우 벽 밖)으로 튕겨 나가면
+   * 캔버스 밖에서만 그려지기 때문이다. 아래에서 위치·속도를 제한한다.
+   */
+  _keepBodiesInView() {
+    const { w, h } = this.bounds;
+    if (w < 1 || h < 1) return;
+
+    const ceiling = this._ceilingY();
+
+    this.items.forEach((body) => {
+      const sprite = body.sprite;
+      if (!sprite) return;
+
+      const halfW = sprite.w * 0.4;
+      const halfH = sprite.h * 0.4;
+      const minX = halfW + 6;
+      const maxX = w - halfW - 6;
+      const minY = ceiling;
+      const maxY = h - halfH - 8;
+
+      let { x, y } = body.position;
+      let vx = body.velocity.x;
+      let vy = body.velocity.y;
+      let clamped = false;
+
+      if (x < minX) {
+        x = minX;
+        vx = Math.abs(vx) * 0.3;
+        clamped = true;
+      } else if (x > maxX) {
+        x = maxX;
+        vx = -Math.abs(vx) * 0.3;
+        clamped = true;
+      }
+
+      if (y < minY) {
+        y = minY;
+        vy = Math.abs(vy) * 0.25;
+        clamped = true;
+      } else if (y > maxY) {
+        y = maxY;
+        vy = -Math.abs(vy) * 0.3;
+        clamped = true;
+      }
+
+      if (clamped) {
+        Body.setPosition(body, { x, y });
+        Body.setVelocity(body, { x: vx, y: vy });
+      }
+
+      const speed = Vector.magnitude(body.velocity);
+      if (speed > MAX_SPEED) {
+        Body.setVelocity(body, Vector.mult(Vector.normalise(body.velocity), MAX_SPEED));
+      }
+    });
   }
 
   _bindEvents() {
@@ -219,10 +288,11 @@ export class TreasureBox {
       this.items.forEach((body) => {
         if (body.dropDelay > 0 && now >= body.dropDelay) {
           Body.setStatic(body, false);
-          Body.setVelocity(body, { x: (Math.random() - 0.5) * 0.5, y: 1.5 });
+          Body.setVelocity(body, { x: (Math.random() - 0.5) * 0.5, y: 0.4 });
           body.dropDelay = 0;
         }
       });
+      this._keepBodiesInView();
     });
 
     this.canvas.addEventListener('pointerdown', (e) => {
@@ -275,17 +345,17 @@ export class TreasureBox {
       ? Vector.normalise(diff)
       : { x: (Math.random() - 0.5), y: -1 };
 
-    const kick = 0.07;
+    const kick = 0.05;
     Body.applyForce(body, body.position, Vector.mult(dir, kick));
     Body.setVelocity(body, {
-      x: body.velocity.x + dir.x * 10,
-      y: body.velocity.y + dir.y * 10 - 6,
+      x: body.velocity.x + dir.x * 6,
+      y: body.velocity.y + dir.y * 6 - 3,
     });
-    Body.setAngularVelocity(body, body.angularVelocity + (Math.random() - 0.5) * 0.3);
+    Body.setAngularVelocity(body, body.angularVelocity + (Math.random() - 0.5) * 0.2);
   }
 
   _applySwipe(px, py, dx, dy) {
-    const impulse = Vector.mult(Vector.normalise({ x: dx, y: dy }), 0.04);
+    const impulse = Vector.mult(Vector.normalise({ x: dx, y: dy }), 0.028);
     this.items.forEach((body) => {
       const dist = Vector.magnitude(Vector.sub(body.position, { x: px, y: py }));
       if (dist < 150) {
@@ -319,6 +389,10 @@ export class TreasureBox {
 
       const sw = sprite.w;
       const sh = sprite.h;
+
+      if (sprite.borderLayer) {
+        drawBorderOnContext(ctx, sprite.borderLayer, 0, 0, sw, sh);
+      }
       ctx.drawImage(sprite.img, -sw / 2, -sh / 2, sw, sh);
 
       ctx.restore();

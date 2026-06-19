@@ -950,7 +950,7 @@ body {
 }
 
 .bar-float .icon-btn,
-.bar-float .box-cam-btn {
+.bar-float .box-actions {
   pointer-events: auto;
 }
 
@@ -1000,38 +1000,11 @@ body {
   color: var(--mist-dim);
 }
 
-.box-foot {
-  justify-content: center;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
-}
-
-.box-cam-btn {
+.box-actions {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 1.15rem;
-  border: 1px solid rgba(126, 200, 227, 0.28);
-  border-radius: 999px;
-  background: rgba(12, 18, 32, 0.68);
-  color: var(--ice);
-  cursor: pointer;
+  gap: 0.35rem;
   pointer-events: auto;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.box-cam-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.box-cam-btn span {
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-}
-
-.box-cam-btn:active {
-  transform: scale(0.94);
-  background: rgba(126, 200, 227, 0.14);
 }
 
 .share-sheet {
@@ -1042,7 +1015,7 @@ body {
   align-items: flex-end;
   justify-content: center;
   padding: 1.2rem;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1.6rem);
   background: rgba(4, 6, 12, 0.55);
   backdrop-filter: blur(6px);
 }

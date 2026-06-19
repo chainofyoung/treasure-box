@@ -120,23 +120,21 @@
             <span class="box-title">줍줍일지</span>
             <span class="box-count" id="box-count">0</span>
           </div>
-          <button id="btn-share" class="icon-btn" aria-label="공유" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-              <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
-              <path d="M5 20h14" />
-            </svg>
-          </button>
+          <div class="box-actions">
+            <button id="btn-share" class="icon-btn" aria-label="공유" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
+                <path d="M5 20h14" />
+              </svg>
+            </button>
+            <button id="btn-add-more" class="icon-btn accent" aria-label="더 찍기">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                <path d="M4 8h2l2-3h8l2 3h2a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 012-2z" />
+                <circle cx="12" cy="14" r="3.5" />
+              </svg>
+            </button>
+          </div>
         </header>
-
-        <footer class="bar bar-float bar-foot box-foot">
-          <button id="btn-add-more" class="box-cam-btn" aria-label="더 찍기">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-              <path d="M4 8h2l2-3h8l2 3h2a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V10a2 2 0 012-2z" />
-              <circle cx="12" cy="14" r="3.5" />
-            </svg>
-            <span>더 찍기</span>
-          </button>
-        </footer>
 
         <div id="share-sheet" class="share-sheet" hidden>
           <div class="share-sheet-panel share-sheet-panel-wide">
