@@ -69,9 +69,7 @@
             <div class="cutout-bg" aria-hidden="true"></div>
             <img id="preview-cutout" alt="" />
           </div>
-          <div id="subject-border" class="subject-border" hidden aria-hidden="true">
-            <span class="subject-border-ring"></span>
-          </div>
+          <canvas id="subject-border" class="subject-border-canvas" hidden aria-hidden="true"></canvas>
           <canvas id="scan-sweep" class="scan-sweep" aria-hidden="true"></canvas>
           <div class="scan-shimmer" aria-hidden="true"></div>
           <p id="scan-status" class="scan-status-float">줍는 중…</p>
@@ -108,15 +106,16 @@
           <div class="vessel-edge" aria-hidden="true"></div>
         </div>
 
-        <header class="bar bar-float bar-top">
+        <header class="bar bar-float bar-top box-bar">
           <button id="btn-box-back" class="icon-btn" aria-label="처음">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
               <circle cx="12" cy="12" r="3" />
               <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
             </svg>
           </button>
-          <div class="collect-meter" id="item-count" aria-hidden="true">
-            <span class="meter-fill"></span>
+          <div class="box-head-center">
+            <span class="box-title">줍줍일지</span>
+            <span class="box-count" id="box-count">0</span>
           </div>
           <button id="btn-add-more" class="icon-btn accent" aria-label="추가">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
@@ -126,21 +125,13 @@
           </button>
         </header>
 
-        <div class="tilt-pulse tilt-float" id="tilt-hint" aria-hidden="true"></div>
-
-        <footer class="bar bar-float bar-foot bar-foot-split">
-          <button id="btn-enable-tilt" class="icon-btn" aria-label="기울기">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-              <rect x="6" y="3" width="12" height="18" rx="3" />
-              <circle cx="12" cy="17" r="1" fill="currentColor" />
-              <path d="M9 7h6" />
-            </svg>
-          </button>
-          <button id="btn-share" class="icon-btn" aria-label="공유" disabled>
+        <footer class="bar bar-float bar-foot box-foot">
+          <button id="btn-share" class="box-share-btn" aria-label="공유" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
               <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
               <path d="M5 20h14" />
             </svg>
+            <span>공유</span>
           </button>
         </footer>
 

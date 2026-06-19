@@ -43,7 +43,6 @@ const els = {
   subjectBorder: document.getElementById('subject-border'),
   btnBoxBack: document.getElementById('btn-box-back'),
   btnAddMore: document.getElementById('btn-add-more'),
-  btnEnableTilt: document.getElementById('btn-enable-tilt'),
   btnShare: document.getElementById('btn-share'),
   shareSheet: document.getElementById('share-sheet'),
   btnShareSnapshot: document.getElementById('btn-share-snapshot'),
@@ -68,8 +67,7 @@ const els = {
   btnCameraIntroCancel: document.getElementById('btn-camera-intro-cancel'),
   physicsCanvas: document.getElementById('physics-canvas'),
   boxFrame: document.querySelector('.vessel-full'),
-  itemCount: document.querySelector('.meter-fill'),
-  tiltHint: document.getElementById('tilt-hint'),
+  boxCount: document.getElementById('box-count'),
 };
 
 const scanReveal = new ScanReveal({
@@ -97,6 +95,7 @@ let resetTap = 0;
 let processing = false;
 let sharePrepareMode = 'snapshot';
 const CAMERA_INTRO_KEY = 'camera-intro-ok';
+let tiltActivated = false;
 
 preloadModels().catch(() => {});
 bindButtonFx();
@@ -112,12 +111,42 @@ function showScreen(name) {
   currentScreen = name;
 }
 
+function activateTilt() {
+  if (!treasureBox || tiltActivated) return;
+  tiltActivated = true;
+
+  const onOrient = (e) => {
+    treasureBox.handleOrientation(e.beta, e.gamma);
+  };
+
+  window.addEventListener('deviceorientation', onOrient);
+  treasureBox.setTiltEnabled(true);
+}
+
+function requestTiltPermission() {
+  const needsPerm =
+    typeof DeviceOrientationEvent !== 'undefined'
+    && typeof DeviceOrientationEvent.requestPermission === 'function';
+
+  if (!needsPerm) {
+    activateTilt();
+    return;
+  }
+
+  DeviceOrientationEvent.requestPermission()
+    .then((state) => {
+      if (state === 'granted') activateTilt();
+    })
+    .catch(() => {});
+}
+
 async function ensureBox() {
   if (!treasureBox) {
     treasureBox = new TreasureBox(els.physicsCanvas, els.boxFrame);
     treasureBox.init();
     isFirstVisit = false;
   }
+  requestTiltPermission();
 }
 
 async function restoreCollection() {
@@ -170,8 +199,7 @@ function closeShareSheet() {
 }
 
 function updateMeter(count) {
-  const pct = Math.min(100, count * 14);
-  els.itemCount.style.width = `${pct}%`;
+  if (els.boxCount) els.boxCount.textContent = String(count);
 }
 
 function revokeTransparent() {
@@ -325,33 +353,6 @@ async function addToBox() {
   els.scanCutoutWrap.style.clipPath = 'inset(0 0 100% 0)';
 }
 
-function enableTilt() {
-  const requestPerm =
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function';
-
-  const onOrient = (e) => {
-    treasureBox?.handleOrientation(e.beta, e.gamma);
-    els.tiltHint.classList.add('hidden');
-  };
-
-  const activate = () => {
-    window.addEventListener('deviceorientation', onOrient);
-    treasureBox?.setTiltEnabled(true);
-    els.btnEnableTilt.classList.add('on');
-  };
-
-  if (requestPerm) {
-    DeviceOrientationEvent.requestPermission()
-      .then((state) => {
-        if (state === 'granted') activate();
-      })
-      .catch(console.error);
-  } else {
-    activate();
-  }
-}
-
 function tryReset() {
   resetTap += 1;
   if (resetTap < 2) {
@@ -362,6 +363,7 @@ function tryReset() {
   clearTreasures();
   treasureBox?.destroy();
   treasureBox = null;
+  tiltActivated = false;
   isFirstVisit = true;
   updateMeter(0);
   updateShareState(0);
@@ -523,8 +525,10 @@ window.addEventListener('resize', () => {
 });
 els.btnBoxBack.addEventListener('click', tryReset);
 els.btnAddMore.addEventListener('click', openCamera);
-els.btnEnableTilt.addEventListener('click', enableTilt);
 els.btnShare.addEventListener('click', openShareSheet);
+els.physicsCanvas.addEventListener('pointerdown', () => {
+  if (!tiltActivated) requestTiltPermission();
+}, { passive: true });
 els.btnShareSnapshot.addEventListener('click', () => openSharePreviewFrom('snapshot'));
 els.btnShareItems.addEventListener('click', () => {
   sharePrepareMode = 'items';

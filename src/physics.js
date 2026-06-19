@@ -4,6 +4,9 @@ import { trimTransparent } from './trimImage.js';
 
 const { Engine, Render, Runner, Bodies, Body, Composite, Events, Vector } = Matter;
 
+const GRAVITY_STRENGTH = 2.4;
+const GRAVITY_SCALE = 0.0034;
+
 export class TreasureBox {
   constructor(canvas, frameEl) {
     this.canvas = canvas;
@@ -11,8 +14,8 @@ export class TreasureBox {
     this.ctx = canvas.getContext('2d');
     this.items = [];
     this.sprites = new Map();
-    this.gravity = { x: 0, y: 1 };
-    this.tiltEnabled = false;
+    this.gravity = { x: 0, y: GRAVITY_STRENGTH };
+    this.tiltEnabled = true;
     this.bounds = { x: 0, y: 0, w: 0, h: 0 };
     this.walls = [];
     this.initialized = false;
@@ -26,7 +29,9 @@ export class TreasureBox {
       return;
     }
 
-    this.engine = Engine.create({ gravity: { x: 0, y: 1, scale: 0.001 } });
+    this.engine = Engine.create({
+      gravity: { x: 0, y: GRAVITY_STRENGTH, scale: GRAVITY_SCALE },
+    });
     this.runner = Runner.create();
     this._resize();
     this._createWalls();
@@ -137,10 +142,10 @@ export class TreasureBox {
     const bw = sprite.w * 0.78;
     const bh = sprite.h * 0.78;
     const body = Bodies.rectangle(x, y, bw, bh, {
-      restitution: 0.72,
-      friction: 0.3,
-      frictionAir: 0.015,
-      density: 0.002,
+      restitution: 0.58,
+      friction: 0.38,
+      frictionAir: 0.008,
+      density: 0.0048,
       label: 'treasure',
       chamfer: { radius: Math.min(bw, bh) * 0.18 },
     });
@@ -174,19 +179,19 @@ export class TreasureBox {
   setTiltEnabled(enabled) {
     this.tiltEnabled = enabled;
     if (!enabled) {
-      this.gravity = { x: 0, y: 1 };
+      this.gravity = { x: 0, y: GRAVITY_STRENGTH };
       this.engine.gravity.x = 0;
-      this.engine.gravity.y = 1;
+      this.engine.gravity.y = GRAVITY_STRENGTH;
     }
   }
 
   handleOrientation(beta, gamma) {
     if (!this.tiltEnabled) return;
-    const gx = Math.max(-1, Math.min(1, (gamma || 0) / 45));
-    const gy = Math.max(-1, Math.min(1, ((beta || 0) - 45) / 45));
-    this.gravity = { x: gx, y: gy };
-    this.engine.gravity.x = gx;
-    this.engine.gravity.y = gy;
+    const gx = Math.max(-1.6, Math.min(1.6, (gamma || 0) / 32));
+    const gy = Math.max(-1.6, Math.min(1.6, ((beta || 0) - 45) / 32));
+    this.gravity = { x: gx * GRAVITY_STRENGTH, y: gy * GRAVITY_STRENGTH };
+    this.engine.gravity.x = gx * GRAVITY_STRENGTH;
+    this.engine.gravity.y = gy * GRAVITY_STRENGTH;
   }
 
   _bindEvents() {

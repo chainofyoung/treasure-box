@@ -680,11 +680,6 @@ body {
   position: absolute;
   inset: 0;
   z-index: 1;
-  filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.45));
-}
-
-.scan-cutout-wrap.revealed img {
-  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.55));
 }
 
 #preview-original {
@@ -716,64 +711,19 @@ body {
   opacity: 1;
 }
 
-.subject-border {
+.subject-border-canvas {
   position: absolute;
-  z-index: 6;
-  pointer-events: none;
-  border-radius: 10px;
-  padding: 5px;
-  opacity: 0;
-  transform: scale(0.96);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-  overflow: hidden;
-  animation: border-glow 1.6s ease-in-out infinite;
-}
-
-.subject-border::before {
-  content: '';
-  position: absolute;
-  inset: -60%;
-  background: conic-gradient(
-    #ff6b9d,
-    #c77dff,
-    #6ecbff,
-    #7dffb3,
-    #ffe66d,
-    #ff9b6b,
-    #ff6b9d
-  );
-  animation: border-spin 2.8s linear infinite;
-}
-
-.subject-border.active {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.subject-border-ring {
-  position: relative;
-  z-index: 1;
-  display: block;
+  inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  background: transparent;
-  box-shadow:
-    0 0 18px rgba(180, 230, 255, 0.35),
-    inset 0 0 12px rgba(126, 200, 227, 0.15);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
 }
 
-.scan-stage.scan-done .subject-border.active {
+.subject-border-canvas.active {
   opacity: 1;
-}
-
-@keyframes border-spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes border-glow {
-  0%, 100% { filter: brightness(1) saturate(1); }
-  50% { filter: brightness(1.15) saturate(1.2); }
 }
 
 .scan-status-float {
@@ -986,7 +936,7 @@ body {
 }
 
 .bar-float .icon-btn,
-.bar-float .collect-meter {
+.bar-float .box-share-btn {
   pointer-events: auto;
 }
 
@@ -1000,49 +950,80 @@ body {
   padding-bottom: calc(env(safe-area-inset-bottom) + 0.8rem);
 }
 
-.tilt-float {
-  position: absolute;
-  bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  margin-top: 0;
+.box-bar {
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
-.collect-meter {
-  width: 64px;
-  height: 3px;
-  background: rgba(180, 210, 240, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
+.box-head-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  pointer-events: none;
 }
 
-.meter-fill {
-  display: block;
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, transparent, var(--ice), transparent);
-  box-shadow: 0 0 8px var(--ice-glow);
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+.box-title {
+  font-family: var(--font-sigil);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  margin-right: -0.28em;
+  color: var(--mist-dim);
 }
 
-.tilt-pulse {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ice);
-  box-shadow: 0 0 12px var(--ice-glow);
-  animation: tilt-blink 2s ease-in-out infinite;
-  transition: opacity 0.5s;
+.box-count {
+  font-family: var(--font-sigil);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  color: var(--sigil);
 }
 
-.tilt-pulse.hidden {
-  opacity: 0;
+.box-count::after {
+  content: '개';
+  margin-left: 0.12em;
+  font-size: 0.72rem;
+  color: var(--mist-dim);
 }
 
-@keyframes tilt-blink {
-  0%, 100% { opacity: 0.25; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
+.box-foot {
+  justify-content: center;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+}
+
+.box-share-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid rgba(180, 210, 240, 0.14);
+  border-radius: 14px;
+  background: rgba(12, 18, 32, 0.62);
+  color: var(--mist);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.box-share-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.box-share-btn span {
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+}
+
+.box-share-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.box-share-btn:not(:disabled):active {
+  transform: scale(0.94);
+  background: rgba(126, 200, 227, 0.12);
 }
 
 .share-sheet {
